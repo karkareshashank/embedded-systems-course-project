@@ -9,7 +9,8 @@
 #include <asm/uaccess.h>
 #include <linux/pci.h>
 #include <linux/spinlock.h>
-
+#include <linux/param.h>
+#include <linux/jiffies.h>
 
 #define DEVICE_NAME                 	"gmem"
 #define MEMORY_BUFFER_SIZE		256
@@ -121,6 +122,9 @@ static struct file_operations My_fops = {
 int __init My_driver_init(void)
 {
 	int ret;
+	char* init_string;
+	u64 curr_jiffy_count;
+	long int uptime;
 
 	/* initializing the read/write lock */
 	rwlock_init(&mr_rwlock);
@@ -143,9 +147,14 @@ int __init My_driver_init(void)
 
 	/* Allocate memory for the string */
 	my_devp->mem_buffer = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE, GFP_KERNEL);
+	
+	/* initializing the memory buffer with the default string */
+	init_string = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE,GFP_KERNEL);
+	curr_jiffy_count = get_jiffies_64();
+	uptime = (curr_jiffy_count / HZ);
+	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %ld seconds.",uptime);
 
-	/* Initializing the mem_buffer with the per-given string */
-	strcpy(my_devp->mem_buffer, "Hello world! This is shashank karkare, and this machine has worked for  %d seconds");
+
 
 	if(!(my_devp->mem_buffer)){
 		printk("Bad kamlloc\n"); return -ENOMEM;

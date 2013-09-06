@@ -144,6 +144,9 @@ int __init My_driver_init(void)
 	/* Allocate memory for the string */
 	my_devp->mem_buffer = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE, GFP_KERNEL);
 
+	/* Initializing the mem_buffer with the per-given string */
+	strcpy(my_devp->mem_buffer, "Hello world! This is shashank karkare, and this machine has worked for  %d seconds");
+
 	if(!(my_devp->mem_buffer)){
 		printk("Bad kamlloc\n"); return -ENOMEM;
 	}

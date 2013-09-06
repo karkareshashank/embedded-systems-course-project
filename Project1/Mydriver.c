@@ -67,22 +67,40 @@ int My_driver_release(struct inode *inode, struct file *file)
 ssize_t My_driver_write(struct file *file, const char *buf,
            size_t count, loff_t *ppos)
 {
+	char  temp_buffer[count];
 	size_t leftover;
 	int res1;
-	int res2;
 	struct My_dev *my_devp = file->private_data;
-	
-	if(count < MEMORY_BUFFER_SIZE)			// If string is smaller than buffer size //
-		res1 = copy_from_user((void *)&my_devp->mem_buffer, (void __user *)buf, count);	
+
+	write_lock(&mr_rwlock);
+	res1 = copy_from_user((void *)&temp_buffer, (void __user *)buf, count);
+
+	if(count <= MEMORY_BUFFER_SIZE)			// If string is smaller than buffer size //
+		memcpy((void*)my_devp->mem_buffer,(void*)temp_buffer, count);
 	else						// If string is bigger than buffer size wrap around //
 	{
 		leftover = MEMORY_BUFFER_SIZE - count;
-		res1 = copy_from_user((void *)&my_devp->mem_buffer, (void __user *)buf, MEMORY_BUFFER_SIZE);
-		res2 = copy_from_user((void *)&my_devp->mem_buffer, (void __user *)
-
+		strncpy(my_devp->mem_buffer , temp_buffer , MEMORY_BUFFER_SIZE);	// Copied first 256 bytes int he buffer ..now wrap around the rest //
+		strncpy(my_devp->mem_buffer , temp_buffer + MEMORY_BUFFER_SIZE , leftover);	//wraping around the leftover //
 	}
+	write_unlock(&mr_rwlock);
 
 	printk("\n%s \n", my_devp->mem_buffer);
+
+	return res1;
+}
+
+
+/*
+ * Read to my driver
+ */
+ssize_t My_driver_read(struct file *file, char __user *buf , size_t count, loff_t *ppos)
+{
+	int res;
+
+	read_lock(&mr_rwlock);
+	res = copy_to_user((void __user *) buf , (void *)my_devp->mem_buffer, MEMORY_BUFFER_SIZE);
+	read_unlock(&mr_rwlock);
 
 	return res;
 }
@@ -93,6 +111,7 @@ static struct file_operations My_fops = {
     .owner = THIS_MODULE,           /* Owner */
     .open = My_driver_open,              /* Open method */
     .release = My_driver_release,        /* Release method */
+    .read  = My_driver_read,		 /* Read method */
     .write = My_driver_write,            /* Write method */
 };
 

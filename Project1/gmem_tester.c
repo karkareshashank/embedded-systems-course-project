@@ -25,6 +25,7 @@ int main(int argc,char** argv)
 	char argument[10];
 	char *in_string;
 	int i;
+	ssize_t ret;
 
 	// Check for the argument 
 	if(argc == 1 )	
@@ -59,6 +60,14 @@ int main(int argc,char** argv)
 			goto exit;
 		}
 		printf("show \n");
+		ret = read(fd, in_string , 256);
+		if(ret == -1)
+		{
+			printf("Error : %s \n",strerror(errno));
+			goto exit;
+		}
+
+		printf("%s \n",in_string);
 
 	}
 	else if(strcmp(argument,"write") == 0)			// If the argument is write , write to the buffer with the given string //
@@ -82,6 +91,13 @@ int main(int argc,char** argv)
 		}
 
 		printf("%s\n",in_string);
+
+		ret = write(fd, in_string, strlen(in_string));
+		if(ret == -1)
+		{
+			printf("Error: %s\n",strerror(errno));
+			goto exit;
+		}
 
 	}
 	else							// Else its a wrong argument to the command //

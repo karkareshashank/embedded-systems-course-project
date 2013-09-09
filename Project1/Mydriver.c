@@ -75,6 +75,7 @@ ssize_t My_driver_write(struct file *file, const char *buf,
 
 	write_lock(&mr_rwlock);
 	res1 = copy_from_user((void *)&temp_buffer, (void __user *)buf, count);
+	temp_buffer[strlen(temp_buffer)] = '\0';
 
 	if(count <= MEMORY_BUFFER_SIZE)			// If string is smaller than buffer size //
 		memcpy((void*)my_devp->mem_buffer,(void*)temp_buffer, count);
@@ -151,9 +152,9 @@ int __init My_driver_init(void)
 	/* initializing the memory buffer with the default string */
 	init_string = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE,GFP_KERNEL);
 	curr_jiffy_count = get_jiffies_64();
-	uptime = (curr_jiffy_count / HZ);
-	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %ld seconds.",uptime);
-
+	uptime = do_div(curr_jiffy_count,HZ);
+	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %llu seconds.",curr_jiffy_count);
+	strcpy(my_devp->mem_buffer,init_string);	
 
 
 	if(!(my_devp->mem_buffer)){

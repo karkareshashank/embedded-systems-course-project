@@ -24,6 +24,7 @@ struct My_dev {
 	struct cdev cdev;               /* The cdev structure */
 	char name[20];                  /* Name of device*/
 	char *mem_buffer;		/* buffer for the input string */
+	uint8_t  pos;			/* current position in the buffer */
 } *my_devp;
 
 static dev_t my_dev_number;      /* Allotted device number */
@@ -69,22 +70,29 @@ ssize_t My_driver_write(struct file *file, const char *buf,
            size_t count, loff_t *ppos)
 {
 	char  temp_buffer[count];
-	size_t leftover;
+	uint8_t curr_pos;
+	int i;
 	int res1;
 	struct My_dev *my_devp = file->private_data;
 
+	curr_pos = my_devp->pos;
+
 	write_lock(&mr_rwlock);
 	res1 = copy_from_user((void *)&temp_buffer, (void __user *)buf, count);
-	temp_buffer[strlen(temp_buffer)] = '\0';
 
-	if(count <= MEMORY_BUFFER_SIZE)			// If string is smaller than buffer size //
-		memcpy((void*)my_devp->mem_buffer,(void*)temp_buffer, count);
-	else						// If string is bigger than buffer size wrap around //
+	for(i = 0; i < count;i++)
 	{
-		leftover = MEMORY_BUFFER_SIZE - count;
-		strncpy(my_devp->mem_buffer , temp_buffer , MEMORY_BUFFER_SIZE);	// Copied first 256 bytes int he buffer ..now wrap around the rest //
-		strncpy(my_devp->mem_buffer , temp_buffer + MEMORY_BUFFER_SIZE , leftover);	//wraping around the leftover //
+		if(curr_pos == (MEMORY_BUFFER_SIZE - 1))
+			curr_pos = 0;
+		my_devp->mem_buffer[curr_pos] = temp_buffer[i];
+		curr_pos++;
 	}
+	if(curr_pos == MEMORY_BUFFER_SIZE-1)
+		my_devp->mem_buffer[0] = '\0';
+	else
+		my_devp->mem_buffer[curr_pos] = '\0';
+
+	my_devp->pos = curr_pos;
 	write_unlock(&mr_rwlock);
 
 	printk("\n%s \n", my_devp->mem_buffer);
@@ -154,6 +162,7 @@ int __init My_driver_init(void)
 	curr_jiffy_count = get_jiffies_64();
 	uptime = do_div(curr_jiffy_count,HZ);
 	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %llu seconds.",curr_jiffy_count);
+	my_devp->pos = strlen(init_string) - 1;
 	strcpy(my_devp->mem_buffer,init_string);	
 
 

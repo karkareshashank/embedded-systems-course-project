@@ -39,7 +39,7 @@ int main(int argc,char** argv)
 	fd = open("/dev/gmem",O_RDWR);
 	if(fd == -1)	
 	{
-		printf("Error : %s \n",strerror(errno));
+		printf("Error opening file /dev/gmem : %s \n",strerror(errno));
 		exit(1);
 	}
 
@@ -59,7 +59,7 @@ int main(int argc,char** argv)
 			gmem_tester_usage();
 			goto exit;
 		}
-		printf("show \n");
+		
 		ret = read(fd, in_string , 256);
 		if(ret == -1)
 		{
@@ -78,7 +78,7 @@ int main(int argc,char** argv)
 			gmem_tester_usage();
 			goto exit;
 		}
-		printf("write\n");
+			
 		strcpy(in_string,argv[2]);
 		if(argc > 3)
 		{
@@ -89,8 +89,6 @@ int main(int argc,char** argv)
 			}
 
 		}
-
-		printf("%s\n",in_string);
 
 		ret = write(fd, in_string, strlen(in_string));
 		if(ret == -1)

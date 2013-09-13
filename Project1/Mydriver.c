@@ -159,7 +159,7 @@ int __init My_driver_init(void)
 	
 	/* initializing the memory buffer with the default string */
 	init_string = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE,GFP_KERNEL);
-	curr_jiffy_count = get_jiffies_64();
+	curr_jiffy_count = jiffies;
 	uptime = do_div(curr_jiffy_count,HZ);
 	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %llu seconds.",curr_jiffy_count);
 	my_devp->pos = strlen(init_string) - 1;

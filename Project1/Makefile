@@ -3,9 +3,10 @@ obj-m:= Mydriver.o
 KDIR:= /lib/modules/$(shell uname -r)/build
 PWD:= $(shell pwd)
 
+APP = gmem_tester
 
 default:
-#	gcc main_1.c -o $(APP) -lpthread	
+	gcc gmem_tester.c -o $(APP) 	
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:
@@ -19,4 +20,4 @@ clean:
 	rm -f *.mod.o
 	rm -f \.*.cmd
 	rm -f Module.markers
-
+	rm -f gmem_tester

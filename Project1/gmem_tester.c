@@ -21,19 +21,21 @@ void gmem_tester_usage()
 int main(int argc,char** argv)
 {
 
-	int fd;				// file descriptor
-	char argument[10];
-	char *in_string;
-	int i;
-	ssize_t ret;
+	int fd;				// file descriptor for device file
+	char argument[10];		// Strores the first argument (show / write )
+	char *in_string;		// Stores the entire string to write
+	int i;				// Loop variable
+	ssize_t ret;			// Stores the return value from the read/write  function
+
 
 	// Check for the argument 
-	if(argc == 1 )	
+	if(argc == 1 )			// If no argumnet then error	
 	{
 		printf("Error: Command need atleast 1 argument \n");
 		gmem_tester_usage();
 		exit(1);
 	}
+
 
 	//Opening the device file to read or write
 	fd = open("/dev/gmem",O_RDWR);
@@ -43,9 +45,11 @@ int main(int argc,char** argv)
 		exit(1);
 	}
 
+
 	// Allocating space for in_string variable
 	in_string = (char*)malloc(sizeof(char)*1000);
 	in_string[0] = '\0';
+
 
 	// Copying the argument in another variable
 	strcpy(argument,argv[1]);
@@ -59,7 +63,8 @@ int main(int argc,char** argv)
 			gmem_tester_usage();
 			goto exit;
 		}
-		
+
+		// reads the data from the /dev/gmem file		
 		ret = read(fd, in_string , 256);
 		if(ret == -1)
 		{
@@ -79,6 +84,7 @@ int main(int argc,char** argv)
 			goto exit;
 		}
 			
+		// collects all the string parts 
 		strcpy(in_string,argv[2]);
 		if(argc > 3)
 		{
@@ -90,6 +96,7 @@ int main(int argc,char** argv)
 
 		}
 
+		// writes the data to the /dev/gmem file
 		ret = write(fd, in_string, strlen(in_string));
 		if(ret == -1)
 		{

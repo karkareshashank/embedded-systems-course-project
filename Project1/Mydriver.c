@@ -1,4 +1,8 @@
-/* My driver  for Lab 1*/
+/*  Mydriver.c ---- driver for /dev/gmem
+ *  ----------------------------------------
+ *  Implemets open, close, read, write operations
+ *  for gmem virtual device.
+ */ 
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -12,11 +16,17 @@
 #include <linux/param.h>
 #include <linux/jiffies.h>
 
-#define DEVICE_NAME                 	"gmem"
-#define MEMORY_BUFFER_SIZE		256
-rwlock_t  mr_rwlock;			/* Lock for simultaneous read/write purpose 
-					 * Concurrency issue			    
-					 */
+
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Shashank Karkare");
+
+
+
+#define DEVICE_NAME                 	"gmem"	 // Device name 
+#define MEMORY_BUFFER_SIZE		256	 // Size of the buffer 
+rwlock_t  mr_rwlock;				 /* Lock for simultaneous read/write purpose 
+						  * Concurrency issue			    
+						  */
 
 
 /* per device structure */
@@ -27,8 +37,8 @@ struct My_dev {
 	uint8_t  pos;			/* current position in the buffer */
 } *my_devp;
 
-static dev_t my_dev_number;      /* Allotted device number */
-struct class *my_dev_class;          /* Tie with the device model */
+static dev_t my_dev_number;      	/* Allotted device number */
+struct class *my_dev_class;          	/* Tie with the device model */
 
 
 /*
@@ -50,6 +60,8 @@ int My_driver_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
+
+
 /*
  * Release My driver
  */
@@ -63,8 +75,10 @@ int My_driver_release(struct inode *inode, struct file *file)
 }
 
 
+
 /*
  * Write to my driver
+ * Handles concurency issue using reader/writer spinlock 
  */
 ssize_t My_driver_write(struct file *file, const char *buf,
            size_t count, loff_t *ppos)
@@ -103,6 +117,7 @@ ssize_t My_driver_write(struct file *file, const char *buf,
 
 /*
  * Read to my driver
+ * Handles concurency issue using reader/writer spinlock 
  */
 ssize_t My_driver_read(struct file *file, char __user *buf , size_t count, loff_t *ppos)
 {
@@ -118,23 +133,27 @@ ssize_t My_driver_read(struct file *file, char __user *buf , size_t count, loff_
 
 /* File operations structure. Defined in linux/fs.h */
 static struct file_operations My_fops = {
-    .owner = THIS_MODULE,           /* Owner */
+    .owner = THIS_MODULE,          	 /* Owner */
     .open = My_driver_open,              /* Open method */
     .release = My_driver_release,        /* Release method */
     .read  = My_driver_read,		 /* Read method */
     .write = My_driver_write,            /* Write method */
 };
 
+
+
 /*
  * Driver Initialization
  */
 int __init My_driver_init(void)
 {
-	int ret;
-	char* init_string;
-	u64 curr_jiffy_count;
-	long int uptime;
+	int ret;			// Variable to store the return value form copy_to/from_user function
+	char* init_string;		// Variable to hold the initialization string
+	u64 curr_jiffy_count;		// Variable to hold the jiffies value
+	long int uptime;		// Stores the uptime in seconds
 
+
+		
 	/* initializing the read/write lock */
 	rwlock_init(&mr_rwlock);
 
@@ -149,16 +168,26 @@ int __init My_driver_init(void)
 	
 	/* Allocate memory for the per-device structure */
 	my_devp = kmalloc(sizeof(struct My_dev), GFP_KERNEL);
-		
 	if (!my_devp) {
 		printk("Bad Kmalloc\n"); return -ENOMEM;
 	}
 
 	/* Allocate memory for the string */
 	my_devp->mem_buffer = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE, GFP_KERNEL);
-	
+	if(!(my_devp->mem_buffer)){
+		kfree(my_devp);
+		printk("Bad kamlloc\n"); return -ENOMEM;
+	}
+
 	/* initializing the memory buffer with the default string */
 	init_string = kmalloc(sizeof(char) * MEMORY_BUFFER_SIZE,GFP_KERNEL);
+	if(!(init_string)){
+		kfree(my_devp->mem_buffer);
+		kfree(my_devp);
+		printk("Bad kamlloc\n"); return -ENOMEM;
+	}
+
+	// Access the jiffies variable for the uptime in ticks
 	curr_jiffy_count = jiffies;
 	uptime = do_div(curr_jiffy_count,HZ);
 	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %llu seconds.",curr_jiffy_count);
@@ -166,9 +195,6 @@ int __init My_driver_init(void)
 	strcpy(my_devp->mem_buffer,init_string);	
 
 
-	if(!(my_devp->mem_buffer)){
-		printk("Bad kamlloc\n"); return -ENOMEM;
-	}
 
 	/* Request I/O region */
 	sprintf(my_devp->name, DEVICE_NAME);
@@ -214,4 +240,3 @@ void __exit My_driver_exit(void)
 
 module_init(My_driver_init);
 module_exit(My_driver_exit);
-MODULE_LICENSE("GPL v2");

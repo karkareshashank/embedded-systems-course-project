@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <error.h>
 #include <errno.h>
+#include <unistd.h>
 
 
 /* Function to print the usage message */

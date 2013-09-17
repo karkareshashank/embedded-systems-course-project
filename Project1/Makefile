@@ -1,12 +1,22 @@
 obj-m:= Mydriver.o
 
-KDIR:= /lib/modules/$(shell uname -r)/build
 PWD:= $(shell pwd)
+
+# Based on the ARCH specified it will choose either arm compiler or gcc for intel arch
+ifeq ($(ARCH),arm)
+	CC = arm-angstrom-linux-gnueabi-gcc
+	KDIR:= /home/shashank/Desktop/ESP/Lab_project/Project_1/custom-linux-kernel/kernel/kernel/
+else
+	CC = gcc
+	KDIR:= /lib/modules/$(shell uname -r)/build
+endif
 
 APP = gmem_tester
 
+
+
 default:
-	gcc gmem_tester.c -o $(APP) 	
+	$(CC) -o $(APP) $(APP).c
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:

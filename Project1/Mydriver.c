@@ -34,7 +34,7 @@ struct My_dev {
 	struct cdev cdev;               /* The cdev structure */
 	char name[20];                  /* Name of device*/
 	char *mem_buffer;		/* buffer for the input string */
-	uint8_t  pos;			/* current position in the buffer */
+	int  pos;			/* current position in the buffer */
 } *my_devp;
 
 static dev_t my_dev_number;      	/* Allotted device number */
@@ -84,7 +84,7 @@ ssize_t My_driver_write(struct file *file, const char *buf,
            size_t count, loff_t *ppos)
 {
 	char  temp_buffer[count];
-	uint8_t curr_pos;
+	int curr_pos;
 	int i;
 	int res1;
 	struct My_dev *my_devp = file->private_data;
@@ -149,7 +149,7 @@ int __init My_driver_init(void)
 {
 	int ret;			// Variable to store the return value form copy_to/from_user function
 	char* init_string;		// Variable to hold the initialization string
-	u64 curr_jiffy_count;		// Variable to hold the jiffies value
+	long int  curr_jiffy_count;		// Variable to hold the jiffies value
 	long int uptime;		// Stores the uptime in seconds
 
 
@@ -189,8 +189,8 @@ int __init My_driver_init(void)
 
 	// Access the jiffies variable for the uptime in ticks
 	curr_jiffy_count = jiffies;
-	uptime = do_div(curr_jiffy_count,HZ);
-	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %llu seconds.",curr_jiffy_count);
+	uptime = curr_jiffy_count/HZ;
+	sprintf(init_string,"Hello world! This is shashank karkare, and this machine has worked for %ld seconds.",uptime);
 	my_devp->pos = strlen(init_string) - 1;
 	strcpy(my_devp->mem_buffer,init_string);	
 
@@ -219,6 +219,8 @@ int __init My_driver_init(void)
 	printk("My Driver Initialized.\n");
 	return 0;
 }
+
+
 /* Driver Exit */
 void __exit My_driver_exit(void)
 {

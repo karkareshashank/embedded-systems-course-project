@@ -16,13 +16,16 @@ Compiling
 1)Cross_compilation for Target machine
 --------------------------------------
 To compile the driver Mydriver.c and the application gmem_tester.c .
-bash~$ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-
+
+bash~$ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-  KDIR=<your_kernel_source_file_directory>
 
 
 2)Compilation for host machine
 ------------------------------
-To compile the driver Mydriver.c and the application gmem_tester.c .
-bash~$ make
+To compile the driver Mydriver.c and the application gmem_tester.c . 
+Argument KDIR is option because it will automatically detect the source file in your system.
+
+bash~$ make [ KDIR=<your_kernel_source_file_directory> ]
 
    
 Usage

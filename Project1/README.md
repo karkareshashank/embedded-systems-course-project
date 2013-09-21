@@ -32,21 +32,26 @@ Usage
 =======
 
 To insert the Mydriver.ko module in the kernel
+
 bash~$ sudo insmod Mydriver.ko
 
 
 To show the content of the gmem device buffer
+
 bash~$ sudo ./gmem_testser show
    
 
 To append the gmem device buffer. 
 (NOTE: Leaving the your_string part empty will generate the error )
+
 bash~$ sudo ./gmem_tester write <your_string>
 
-  
+
 To remove the module from the kernel:
+
 bash~$ sudo rmmod Mydriver
 
 
 To return the directory to proper state
+
 bash~$ make clean

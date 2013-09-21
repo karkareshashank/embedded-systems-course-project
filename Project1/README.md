@@ -10,12 +10,26 @@ The directory also contains gmem_tester.c file which is a user-level testing app
 /dev/gmem device.
 
 
-Usage
-========
+Compiling
+==========
 
+1)Cross_compilation for Target machine
+--------------------------------------
 To compile the driver Mydriver.c and the application gmem_tester.c .
-bash~$ make
+
+bash~$ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-  KDIR=<your_kernel_source_directory>
+
+
+2)Compilation for host machine
+------------------------------
+To compile the driver Mydriver.c and the application gmem_tester.c . 
+Argument KDIR is option because it will automatically detect the kernel source in your system.
+
+bash~$ make [ KDIR=<your_kernel_source_file_directory> ]
+
    
+Usage
+=======
 
 To insert the Mydriver.ko module in the kernel
 bash~$ sudo insmod Mydriver.ko

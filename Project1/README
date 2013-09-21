@@ -17,13 +17,13 @@ Compiling
 --------------------------------------
 To compile the driver Mydriver.c and the application gmem_tester.c .
 
-bash~$ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-  KDIR=<your_kernel_source_file_directory>
+bash~$ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-  KDIR=<your_kernel_source_directory>
 
 
 2)Compilation for host machine
 ------------------------------
 To compile the driver Mydriver.c and the application gmem_tester.c . 
-Argument KDIR is option because it will automatically detect the source file in your system.
+Argument KDIR is option because it will automatically detect the kernel source in your system.
 
 bash~$ make [ KDIR=<your_kernel_source_file_directory> ]
 

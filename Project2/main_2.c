@@ -11,7 +11,7 @@
 
 #include "structure.h"
 
-#define MIN_STR_LEN		20
+#define MIN_STR_LEN		10
 #define MAX_STR_LEN		80
 #define MIN_SLEEP_TIME		1		//	in msec
 #define MAX_SLEEP_TIME		10		//	in msec
@@ -51,10 +51,10 @@ void random_string_gen(char* string)
 
 
 /* function for sender thread */
-void senderfn(int fd);
+void senderfn(int);
 
 /* function for receiver thread */
-void receiverfn();
+void receiverfn(int , int);
 
 
 
@@ -132,4 +132,68 @@ int main(int argc , char** argv)
 
 
 	return 0;
+}
+
+
+
+
+
+
+/*
+ * Sender function which will send TOKEN_LIMIT_PER_THREAD
+ * tokens to the device who's file descriptor it accepts 
+ * as argument.
+ */
+void senderfn(int fd)
+{
+	int i 			= 0;		// loop variable to loop till TOKEN_LIMIT_PER_THREAD
+	int sleep_time		= 0;		// Stores the sleep time for the thread
+	ssize_t string_len	= 0;		// Stores the length of the string passing to the write fn
+	char* string		= NULL;		// Stores the random generated string
+	struct token* new	= NULL;		// Token to be sent
+	
+
+	// Allocating memory for the variables
+	string 		= (char*)malloc(sizeof(char)*MAX_STR_LEN);
+	new    		= (struct token*)malloc(sizeof(struct token));
+	new->string 	= (char*)malloc(sizeof(char)*MAX_STR_LEN);
+
+	// Calculating the string length
+	string_len 	= sizeof(struct token) + MAX_STR_LEN;
+
+
+	// Looping for the TOKEN_LIMIT_PER_THREAD times before stopping
+	for(i = 0;i < TOKEN_LIMIT_PER_THREAD; i++)
+	{	
+		random_string_gen(string);			// Generating a random string
+		strcpy(new->string,string);
+		new->token_id = id++;
+		
+		res = write(fd,(char*)new,string_len);		// Writing the token to the device
+		while(res == -1)				// If failed, retry after a nap
+		{
+			sleep_time = random_number_gen(MIN_SLEEP_TIME,MAX_SLEEP_TIME);
+			usleep(sleep_time);
+			res = write(fd,(char*)new,string_len);
+		}	
+	
+		// Taking a nap
+		sleep_time = random_number_gen(MIN_SLEEP_TIME,MAX_SLEEP_TIME);
+		usleep(sleep_time);
+		
+
+	}
+}
+
+
+
+/*
+ * Receiver function which reads from the device till both the devices 
+ * empty and  taking nap after reading a token from the device.
+ */
+void receiverfn(int fd_1, int fd_2)
+{
+
+
+
 }

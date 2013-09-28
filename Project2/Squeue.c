@@ -85,7 +85,7 @@ int squeue_release(struct inode *inode, struct file *file)
 ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *ppos)
 
 {
-	int 	     		res = 10;
+	int 	     		res = 0;
 	struct token*		temp;
 	ssize_t 		size;
 	struct my_dev*  	ptr;
@@ -127,7 +127,7 @@ ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *
 ssize_t squeue_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
 {
 
-	int res;
+	int res = 0;
 	struct token* data;
 
 	

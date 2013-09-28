@@ -12,6 +12,7 @@
 #include <linux/param.h>
 #include <linux/list.h>
 #include <asm/uaccess.h>
+#include <linux/rwsem.h>
 
 #include "structure.h"
 
@@ -24,24 +25,15 @@ MODULE_AUTHOR("Shashank Karkare");
 #define NUM_DEVICE		2
 
 
-/* Structure to hold tokens in link list */
-struct queue{
-		struct token* tok;
-		struct list_head list;
-	};
-
-
 /* per-device structure */
 struct my_dev{
 	struct 	cdev 		cdev;			// cdev structure assiciated with our device
-	struct list_head 	head;			// Queue to hold tokens
+	struct  token*	 	queue[10];		// Queue to hold tokens
+	int			qstart;			// Enqueue Position in the queue
+	int			qend;			// Dequeue Position in the queue
 	int 			queue_state;		// Holds how many tokens are in the queue
-	struct list_head*	start;
-	struct list_head*	end;
-//	struct  token*  	queue[QUEUE_SIZE];	// Queue to hold tokens
 	char 			name[20];		// name of the device
-//	int 			start; 			// enqueueing position
-//	int 			end;			// dequeueing position
+	struct rw_semaphore	sem;			// Lock for queues read and write operations
 }*my_devp[NUM_DEVICE];
 
 
@@ -62,6 +54,7 @@ int squeue_open(struct inode *inode, struct file *file)
 	my_squeuep = container_of(inode->i_cdev, struct my_dev,cdev);
 
 	file->private_data = my_squeuep;
+	printk("%s: Device opening\n",my_squeuep->name);
 
 	return 0;
 }
@@ -76,6 +69,7 @@ int squeue_release(struct inode *inode, struct file *file)
 	struct my_dev  *my_squeue;
 
 	my_squeue = file->private_data;
+	printk("%s: Device closing\n",my_squeue->name);
 
 	return 0;
 }
@@ -91,13 +85,12 @@ int squeue_release(struct inode *inode, struct file *file)
 ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *ppos)
 
 {
-	int 	     		res;
+	int 	     		res = 10;
 	struct token*		temp;
 	ssize_t 		size;
 	struct my_dev*  	ptr;
-	struct list_head* 	pos;
-	struct queue*		qtemp;
 
+	size = (sizeof(struct token) + 80);
 	ptr = file->private_data;
 
 	// If the queue is empty .. return -1 
@@ -105,18 +98,20 @@ ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *
 		return -1;
 
 	//// Needs lock here ////
-	pos = ptr->head.next;
-	qtemp = container_of(pos,struct queue,list);
-	temp = qtemp->tok;
-	size = sizeof(struct token) + 80;
-	res = copy_to_user((void __user *) buf , (void *)temp, size);
+	
+	down_read(&ptr->sem);
+	temp = ptr->queue[ptr->qend];
+	res = copy_to_user((void __user *)buf, (void *)temp,size);
 
-	list_del(pos);
+	ptr->queue[ptr->qend] = NULL;
+	if(ptr->qend == QUEUE_SIZE-1)
+		ptr->qend = 0;
+	else
+		ptr->qend++;
 	ptr->queue_state--;
-	/// Needs unlock here ////
-
-
 	kfree(temp);
+	up_read(&ptr->sem);
+
 	return res;
 
 }
@@ -133,24 +128,27 @@ ssize_t squeue_write(struct file *file, const char *buf, size_t count, loff_t *p
 {
 
 	int res;
-	struct queue  temp;
 	struct token* data;
 
 	
-	struct my_dev *my_devp = file->private_data;
+	struct my_dev *ptr = file->private_data;
 
-	if(my_devp->queue_state == QUEUE_SIZE)
+	if(ptr->queue_state == QUEUE_SIZE)
 		return -1;
 
 	data = kmalloc(count,GFP_KERNEL);
 
 	//// Locking needed here ////
-	res = copy_from_user((void *)data, (void __user *)buf, count);	
-	INIT_LIST_HEAD(&temp.list);
-	temp.tok = data;
-	list_add_tail(&temp.list,&my_devp->head);	
-	my_devp->queue_state++;
-	
+	down_write(&ptr->sem);
+	res = copy_from_user((void *)data, (void __user *)buf, count);
+	ptr->queue[ptr->qstart] = data;
+	ptr->queue_state++;
+	if(ptr->qstart == QUEUE_SIZE-1)
+		ptr->qstart = 0;
+	else
+		ptr->qstart++;
+	up_write(&ptr->sem);
+
 	//// unlocking needed here //////
 
 	return res;
@@ -188,6 +186,7 @@ int __init My_driver_init(void)
 {
 	int ret;			// Variable to store the return value form copy_to/from_user function
 	int i;				// loop variable to loop over all devices	
+	int j;				// loop variable for array of pointers
 	char new_device_name[20];	// To store device name appended with 1 or 2
 	
 
@@ -215,16 +214,16 @@ int __init My_driver_init(void)
 			printk("Bad Kmalloc\n"); return -ENOMEM;
 		}
 
-		/* initializing the queue start and end with zero	
-		my_devp[i]->start 	= 0;
-		my_devp[i]->end		= 0;
-		*/
-
-		/* Initializing the queue head */
-		INIT_LIST_HEAD(&my_devp[i]->head);
+		/* initializing the queue start and end with zero	*/
+		for(j = 0;j < QUEUE_SIZE;j++)
+			my_devp[i]->queue[j] = NULL;
+		my_devp[i]->qstart = 0;
+		my_devp[i]->qend   = 0;
 		my_devp[i]->queue_state = 0;
-		my_devp[i]->start = NULL;
-		my_devp[i]->end   = NULL;
+
+
+		/* initializing the semaphores */
+		init_rwsem(&my_devp[i]->sem);
 	
 		/* Request I/O region */
 		sprintf(my_devp[i]->name, new_device_name);

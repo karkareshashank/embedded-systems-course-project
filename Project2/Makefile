@@ -1,4 +1,4 @@
-obj-m:= Mydriver.o
+obj-m:= Squeue.o
 
 PWD:= $(shell pwd)
 
@@ -16,7 +16,7 @@ APP = gmem_tester
 
 
 default:
-	$(CC) -o $(APP) $(APP).c
+#	$(CC) -o $(APP) $(APP).c
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:

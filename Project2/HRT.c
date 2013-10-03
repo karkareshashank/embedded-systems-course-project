@@ -107,6 +107,22 @@ ssize_t My_driver_read(struct file *file, char __user *buf , size_t count, loff_
 
 
 /*
+ *  Exporting read_hrt_counter function for other module to access it
+ */
+unsigned int read_hrt_counter(void)
+{
+	unsigned int count;
+	
+	count = omap_dm_timer_read_counter(my_devp->hr_timer);
+	
+	return count;
+	
+}
+EXPORT_SYMBOL_GPL(read_hrt_counter);
+
+
+
+/*
  *  I/O control operations on teh timer
  */
 static long My_driver_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -218,3 +234,4 @@ MODULE_LICENSE(DRIVER_LICENSE);
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESCRIPTION);
 MODULE_SUPPORTED_DEVICE(DEVICE_NAME);
+

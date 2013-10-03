@@ -87,6 +87,7 @@ ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *
 
 {
 	int 	     		res = 0;
+	unsigned int		dequeue_time;
 	struct token*		temp;
 	ssize_t 		size;
 	struct my_dev*  	ptr;
@@ -102,6 +103,8 @@ ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *
 	
 	down(&ptr->sem);
 	temp = ptr->queue[ptr->qend];
+	dequeue_time = read_hrt_counter();
+	printk("time = %d\n"dequeue_time);
 	res = copy_to_user((void __user *)buf, (void *)temp,size);
 
 	ptr->queue[ptr->qend] = NULL;

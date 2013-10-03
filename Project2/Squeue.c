@@ -21,9 +21,12 @@
 #define DRIVER_AUTHOR			"Shashank Karkare"
 #define DRIVER_DESCRIPTION		"Shared Queue for IPC"
 #define DRIVER_LICENSE			"GPL v2"
-#define DEVICE_NAME				"Squeue"
-#define QUEUE_SIZE				10
-#define NUM_DEVICE				2
+#define DEVICE_NAME			"Squeue"
+#define QUEUE_SIZE			10
+#define NUM_DEVICE			2
+
+
+extern unsigned int read_hrt_counter(void);
 
 
 /* per-device structure */
@@ -39,7 +42,7 @@ struct my_dev{
 
 
 static dev_t my_dev_number;	// Alloted device number //
-struct class *my_dev_class; // Tie with device model //
+struct class *my_dev_class; 	// Tie with device model //
 
 
 
@@ -99,13 +102,14 @@ ssize_t squeue_read(struct file *file, char __user *buf , size_t count, loff_t *
 	if(ptr->queue_state == 0)
 		return -1;
 
-	//// Needs lock here ////
 	
-	down(&ptr->sem);
-	temp = ptr->queue[ptr->qend];
-	dequeue_time = read_hrt_counter();
-	printk("time = %d\n"dequeue_time);
-	res = copy_to_user((void __user *)buf, (void *)temp,size);
+	down(&ptr->sem);						// Locking to protect from simultaneous read //
+	temp = ptr->queue[ptr->qend];				
+
+	dequeue_time = read_hrt_counter();				// Reads the  counter value as a dequeue time
+	temp->dequeue_time = dequeue_time;
+
+	res = copy_to_user((void __user *)buf, (void *)temp,size);	// Copying to user space
 
 	ptr->queue[ptr->qend] = NULL;
 	if(ptr->qend == QUEUE_SIZE-1)
@@ -133,7 +137,7 @@ ssize_t squeue_write(struct file *file, const char *buf, size_t count, loff_t *p
 
 	int res = 0;
 	struct token* data;
-
+	unsigned int	timestamp;
 	
 	struct my_dev *ptr = file->private_data;
 
@@ -145,6 +149,9 @@ ssize_t squeue_write(struct file *file, const char *buf, size_t count, loff_t *p
 	//// Locking needed here ////
 	down(&ptr->sem);
 	res = copy_from_user((void *)data, (void __user *)buf, count);
+	
+	timestamp = read_hrt_counter();
+	data->enqueue_time = timestamp;
 	ptr->queue[ptr->qstart] = data;
 	ptr->queue_state++;
 	if(ptr->qstart == QUEUE_SIZE-1)

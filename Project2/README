@@ -1,0 +1,6 @@
+==============================
+HRT.c , Squeue.c , main_2.c
+=============================
+The directory contains 3 files HRT.c , Squeue.c and main_2.c.
+HRT.c  is a driver for high resolution timer. It uses the hardware timer present 
+in omap processor.

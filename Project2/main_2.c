@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -17,8 +18,15 @@
 #define MIN_SLEEP_TIME		1		//	in msec
 #define MAX_SLEEP_TIME		10		//	in msec
 #define TOKEN_LIMIT_PER_THREAD 	100		
+#define MULTIPLIER		1000
+#define START			1
+#define STOP			2
+#define WRITE			3
+
+
 
 int id = 0;					// 	Token_id
+int hrt_fd;					// File descriptor for hrt file
 pthread_mutex_t		id_lock;		// 	Lock for token id
 
 
@@ -51,6 +59,19 @@ void random_string_gen(char* string)
 	}	
 	string[i] = '\0';
 }
+
+/* Function to print the token read */
+void print_token(struct token* tok)
+{
+	printf("Token_id 		= %d \n",tok->token_id);
+	printf("Token time_before_write = %d \n",tok->time_before_write);
+	printf("Token enqueue time	= %d \n",tok->enqueue_time);
+	printf("Token dequeue time	= %d \n",tok->dequeue_time);
+	printf("Token time_after_read	= %d \n",tok->time_after_read);
+	printf("Token string		= %s \n",tok->string);
+	printf("\n \n");
+}
+
 
 
 /* function to create thread */
@@ -95,9 +116,28 @@ int main(int argc , char** argv)
 	pthread_t  thread7;
 	int dev1	= 1;
 	int dev2	= 2;
+	int res;
 	
 	// Seed for the rand function
 	srand(time(NULL));
+	
+	// Opening the hrt device
+	hrt_fd = open("/dev/HRT",O_RDWR);
+	if(hrt_fd == -1)
+	{
+		printf("Error: %s : %s \n","/dev/HRT",strerror(errno));
+		exit(0);
+	}
+	
+	// Starting the High resolution timer
+	res = ioctl(hrt_fd,START);
+	if(res == -1)
+	{
+		printf("Error:%s: problem in starting the timer \n","/dev/HRT");
+		exit(0);
+	}
+	
+	
 
 
 	// Starting Multithreading //
@@ -126,6 +166,9 @@ int main(int argc , char** argv)
 
 
 
+	res = ioctl(hrt_fd,STOP);
+	close(hrt_fd);
+
 	return 0;
 }
 
@@ -151,6 +194,7 @@ void senderfn(int file_num )
 	struct token* new	= NULL;		// Token to be sent
 	char   device_name[20];
 	char   dev_num[2];
+	unsigned int	timestamp;
 
 	if(file_num == 1)
 		strcpy(dev_num,"1");
@@ -189,17 +233,21 @@ void senderfn(int file_num )
 		new->token_id = id++;
 		pthread_mutex_unlock(&id_lock);
 		
+		// Reading timestamp from HRT
+		res = read(hrt_fd,(char*)&timestamp,sizeof(unsigned int));
+		new->time_before_write = timestamp;
+		
 		res = write(fd,(char*)new,string_len);		// Writing the token to the device
 		while(res == -1)				// If failed, retry after a nap
 		{
 			sleep_time = random_number_gen(MIN_SLEEP_TIME,MAX_SLEEP_TIME);
-			usleep(sleep_time);
+			usleep(sleep_time*MULTIPLIER);
 			res = write(fd,(char*)new,string_len);
 		}	
 	
 		// Taking a nap
 		sleep_time = random_number_gen(MIN_SLEEP_TIME,MAX_SLEEP_TIME);
-		usleep(sleep_time);
+		usleep(sleep_time*MULTIPLIER);
 		
 
 	}
@@ -223,7 +271,10 @@ void receiverfn(void)
 	int 	res2 	   = 0;
 	int 	both_empty = 0;
 	int	sleep_time = 0;
+	int 	hrt_res	   = 0;
 	ssize_t string_len = 0;
+	unsigned int 	timestamp1;
+	unsigned int 	timestamp2;
 	struct token* in   = NULL;
 
 
@@ -245,46 +296,54 @@ void receiverfn(void)
 	in = (struct token*)malloc(string_len);
 
 
-	while(!(res1 == -1 && res2 == -1 && both_empty == 50))
+	while(!(res1 == -1 && res2 == -1 && both_empty == 10))
 	{
 		// Reading from Squeue 1
 		res1 = read(fd_1,(char*)in,string_len);
+		hrt_res = read(hrt_fd,(char*)timestamp1,sizeof(unsigned int));
+		in->time_after_read = timestamp1;
 		if(res1 == -1)
 			flag = 1;
 		else
-			printf("%d --- %s \n",in->token_id, in->string);
+			print_token(in);
 
 		while(res1 != -1)
 		{
 			flag = 0;
 			res1 = read(fd_1,(char*)in,string_len);	
+			hrt_res = read(hrt_fd,(char*)timestamp1,sizeof(unsigned int));
+			in->time_after_read = timestamp1;
 			if(res1 == -1)
 				break;
-			printf("%d --- %s \n",in->token_id,in->string);
+			print_token(in);
 		}
 
 
 		// Reading from Squeue 2
 		res2 = read(fd_2,(char*)in,string_len);
+		hrt_res = read(hrt_fd,(char*)timestamp2,sizeof(unsigned int));
+		in->time_after_read = timestamp2;
 		if(res2 == -1)
 		{
 			if(flag == 1)
 				both_empty++;
 		}
 		else	
-			printf("%d --- %s \n",in->token_id,in->string);
+			print_token(in);
 
 		while(res2 != -1)
 		{
 			flag = 0;
 			res2 = read(fd_2,(char*)in,string_len);
+			hrt_res = read(hrt_fd,(char*)timestamp2,sizeof(unsigned int));
+			in->time_after_read = timestamp2;
 			if(res2 == -1)
 				break;
-			printf("%d --- %s \n",in->token_id,in->string);
+			print_token(in);
 		}
 
 		sleep_time = random_number_gen(MIN_SLEEP_TIME,MAX_SLEEP_TIME);
-		usleep(sleep_time);
+		usleep(sleep_time*MULTIPLIER);
 
 	}	
 	

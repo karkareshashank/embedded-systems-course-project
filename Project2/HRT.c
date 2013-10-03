@@ -20,7 +20,7 @@
 #define DRIVER_LICENSE			"GPL v2"
 #define DRIVER_AUTHOR			"Shashank Karkare"
 #define DRIVER_DESCRIPTION		"It is a High Resolution Timer using system clock"
-#define DEVICE_NAME             "HRT"	 						// Device name
+#define DEVICE_NAME                     "HRT"	 						// Device name
 
 
 /* per device structure */
@@ -99,7 +99,7 @@ ssize_t My_driver_read(struct file *file, char __user *buf , size_t count, loff_
 	// Read from the timer here //
 	counter_value = omap_dm_timer_read_counter(my_devp->hr_timer);
 	
-	res = copy_to_user((void __user *) buf , (void *)counter_value , sizeof(unsigned int));
+	res = copy_to_user((void __user *) buf , (void *)&counter_value , sizeof(unsigned int));
 	
 
 	return res;
@@ -133,6 +133,7 @@ static long My_driver_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	{
 		case 1:
 				omap_dm_timer_start(my_ptr->hr_timer);
+				printk("timer = %d \n",omap_dm_timer_read_counter(my_ptr->hr_timer));
 				break;
 		case 2:
 				omap_dm_timer_stop(my_ptr->hr_timer);

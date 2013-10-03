@@ -1,4 +1,4 @@
-obj-m:= Squeue.o
+obj-m:= HRT.o Squeue.o
 
 PWD:= $(shell pwd)
 
@@ -11,12 +11,13 @@ else
 	KDIR:= /lib/modules/$(shell uname -r)/build
 endif
 
-APP = gmem_tester
+ADDITIONAL_LIB = pthread
+APP = main_2
 
 
 
 default:
-#	$(CC) -o $(APP) $(APP).c
+	$(CC) -$(ADDITIONAL_LIB) -o $(APP) $(APP).c
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:
@@ -30,4 +31,4 @@ clean:
 	rm -f *.mod.o
 	rm -f \.*.cmd
 	rm -f Module.markers
-	rm -f gmem_tester
+	rm -f $(APP)

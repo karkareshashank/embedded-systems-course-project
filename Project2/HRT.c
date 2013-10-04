@@ -45,22 +45,7 @@ int My_driver_open(struct inode *inode, struct file *file)
 	/* Get the per-device structure that contains this cdev */
 	my_devp = container_of(inode->i_cdev, struct My_dev, cdev);
 	
-	
-	///// Allocate the timer  here //////
-	my_devp->hr_timer = omap_dm_timer_request();
-	if(my_devp->hr_timer == NULL)
-	{
-		printk("HRT: No more gp timers are available \n");
-		return -1;
-	}
-	
-	// Setting souce clock for the timer //
-	omap_dm_timer_set_source(my_devp->hr_timer,OMAP_TIMER_SRC_SYS_CLK);
-	
-	// Setting timer prescaler to 0 (1:1) //
-	omap_dm_timer_set_prescaler(my_devp->hr_timer,0);
-
-	/* Easy access to cmos_devp from rest of the entry points */
+	/* For easy access of the my_dev structure */
 	file->private_data = my_devp;
 	
 	
@@ -76,9 +61,7 @@ int My_driver_open(struct inode *inode, struct file *file)
 int My_driver_release(struct inode *inode, struct file *file)
 {
 	struct My_dev *my_devp = file->private_data;
-	
-	// Free the timer here //
-	omap_dm_timer_free(my_devp->hr_timer);
+
 	
 	printk("\n%s is closing\n", my_devp->name);
 	
@@ -131,14 +114,14 @@ static long My_driver_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	
 	switch(cmd)
 	{
-		case 1:
+		case 0xffc1:
 				omap_dm_timer_start(my_ptr->hr_timer);
 				printk("timer = %d \n",omap_dm_timer_read_counter(my_ptr->hr_timer));
 				break;
-		case 2:
+		case 0xffc2:
 				omap_dm_timer_stop(my_ptr->hr_timer);
 				break;
-		case 3:
+		case 0xffc3:
 				omap_dm_timer_write_counter(my_ptr->hr_timer,arg);
 				break;
 		default:
@@ -184,6 +167,22 @@ int __init My_driver_init(void)
 		printk("Bad Kmalloc\n"); return -ENOMEM;
 	}
 
+	 ///// Allocate the timer  here //////
+        my_devp->hr_timer = omap_dm_timer_request();
+        if(my_devp->hr_timer == NULL)
+        {
+                printk("HRT: No more gp timers are available \n");
+		kfree(my_devp);
+                return -1;
+        }
+
+        // Setting souce clock for the timer //
+        omap_dm_timer_set_source(my_devp->hr_timer,OMAP_TIMER_SRC_SYS_CLK);
+
+        // Setting timer prescaler to 0 (1:1) //
+        omap_dm_timer_set_prescaler(my_devp->hr_timer,0);
+
+
 	/* Request I/O region */
 	sprintf(my_devp->name, DEVICE_NAME);
 
@@ -214,6 +213,8 @@ int __init My_driver_init(void)
 /* Driver Exit */
 void __exit My_driver_exit(void)
 {
+	/* Freeing the dm_timer */
+	omap_dm_timer_free(my_devp->hr_timer);
 	
 	/* Release the major number */
 	unregister_chrdev_region((my_dev_number), 1);
@@ -224,6 +225,9 @@ void __exit My_driver_exit(void)
 		
 	/* Destroy driver_class */
 	class_destroy(my_dev_class);
+
+	/* destroying the data structure */
+	kfree(my_devp);
 
 	printk("My Driver removed.\n");
 }

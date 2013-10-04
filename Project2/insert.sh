@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 if [ "$USER" ==  "root" ]; then
 	insmod HRT.ko

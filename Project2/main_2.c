@@ -13,20 +13,20 @@
 
 #include "structure.h"
 
-#define MIN_STR_LEN		10
-#define MAX_STR_LEN		80
-#define MIN_SLEEP_TIME		1		//	in msec
-#define MAX_SLEEP_TIME		10		//	in msec
+#define MIN_STR_LEN				10
+#define MAX_STR_LEN				80
+#define MIN_SLEEP_TIME			1		//	in msec
+#define MAX_SLEEP_TIME			10		//	in msec
 #define TOKEN_LIMIT_PER_THREAD 	100		
-#define MULTIPLIER		1000
-#define START			1
-#define STOP			2
-#define WRITE			3
+#define MULTIPLIER				1000
+#define START					0xffc1
+#define STOP					0xffc2
+#define WRITE					0xffc3
 
 
 
-int id = 0;					// 	Token_id
-int hrt_fd;					// File descriptor for hrt file
+int id = 0;							// 	Token_id
+int hrt_fd;							// File descriptor for hrt file
 pthread_mutex_t		id_lock;		// 	Lock for token id
 
 
@@ -129,6 +129,15 @@ int main(int argc , char** argv)
 		exit(0);
 	}
 	
+	// Setting the timer value to 0
+	res = ioctl(hrt_fd,WRITE,0);
+	if(res == -1)
+	{
+		printf("Error:%s: Problem initializing the counter to zero");
+		exit(0);
+	}
+
+
 	// Starting the High resolution timer
 	res = ioctl(hrt_fd,START);
 	if(res == -1)

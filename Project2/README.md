@@ -52,7 +52,7 @@ Usage
 
 	OR
 
-	a) sh ./insert.sh
+	a) bash~$ sh ./insert.sh
 
 
 2) To run the user space application :
@@ -63,14 +63,15 @@ Usage
 3) To remove the modules ( Note: Perform the removing of modules in the given order only) :
 	use sudo if you are not the root user else skip the sudo.
 	
-	a)bash~$ [sudo] rmmod Squeue
+	a) bash~$ [sudo] rmmod Squeue
 	
-	b)bash~$ [sudo] rmmod HRT
+	b) bash~$ [sudo] rmmod HRT
 
 	OR
 
-	a) sh ./remove.sh
+	a) bash~$ sh ./remove.sh
 	
 	
 4) To return the directory to original/proper state use :
-	a)bash~$ make clean
+
+	a) bash~$ make clean

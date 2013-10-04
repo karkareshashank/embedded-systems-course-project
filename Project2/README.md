@@ -1,4 +1,3 @@
-=================================================================
 HRT.c , Squeue.c , main_2.c , structure.h , insert.sh , remove.sh
 =================================================================
 The directory contains  HRT.c , Squeue.c , main_2.c ,structure.h ,insert.sh , remove.sh.
@@ -26,7 +25,6 @@ is root or not and depending on it adds sudo before the rmmod command.
 
 
 
-============
 Compilation 
 ============
 1) Cross-compilation for target machine
@@ -42,7 +40,6 @@ It is not possible to compile the files for host machine.
 You can only compile and run theses program for baegleboard xm or any omap 3730 device.
 
 
-=============
 Usage
 =============
 

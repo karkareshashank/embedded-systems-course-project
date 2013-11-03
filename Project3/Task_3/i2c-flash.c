@@ -60,6 +60,7 @@ struct i2c_dev {
 #define I2C_MINORS	256
 #define MY_PAGE_SIZE	64
 #define NUMBER_OF_PAGES	512
+#define MY_ADAP_NUM	2
 
 static LIST_HEAD(i2c_dev_list);
 static DEFINE_SPINLOCK(i2c_dev_list_lock);
@@ -699,6 +700,13 @@ static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 	i2c_dev = get_free_i2c_dev(adap);
 	if (IS_ERR(i2c_dev))
 		return PTR_ERR(i2c_dev);
+
+	// My code part starts
+	if(adap->nr != MY_ADAP_NUM){
+		return_i2c_dev(i2c_dev);
+		return 0;
+	}
+	// My code part finish
 
 	/* register this i2c device with the driver core */
 	i2c_dev->dev = device_create(i2c_dev_class, &adap->dev,

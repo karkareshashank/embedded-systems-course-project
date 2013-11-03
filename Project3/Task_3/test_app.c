@@ -43,6 +43,33 @@ void random_string_gen(char* string,int pages)
 }
 
 
+void print_string_pagewise(char* string,int pages)
+{
+        int i;
+        int j;
+        int temp;
+        int page_count = 0;
+        char* tmp_page = (char*)malloc(sizeof(char)*65);
+
+        while(page_count < pages){
+
+                temp = page_count * 64;
+                j = 0;
+                for(i = temp; i < temp+64;i++){
+                        tmp_page[j] = string[i];
+                        j++;
+                }
+                tmp_page[j] = '\0';
+
+                printf("Page %3d :  %s  \n",page_count+1,tmp_page);
+                page_count++;
+        }
+
+        return;
+}
+
+
+
 
 
 int main(int argc,char** argv,char** uenv)
@@ -54,7 +81,7 @@ int main(int argc,char** argv,char** uenv)
 	char* data;
 	char* recv_data;
 	char* page_data;
-	int pages = 10;
+	int pages = 20;
 	int page_size = 64;
 
 
@@ -82,7 +109,9 @@ int main(int argc,char** argv,char** uenv)
 	//Creating random string
 	random_string_gen(data,pages);
 
-	printf("send data = %s \n",data);
+	printf("DATA SEND  \n");
+	print_string_pagewise(data,pages);
+	printf("\n---------------------------------------------------\n");
 	// Writing the data
 	do{
 		res = write(fd ,data,pages);
@@ -104,7 +133,8 @@ int main(int argc,char** argv,char** uenv)
 	}while(res!= 0);
 
 
-	printf("Recv_data = %s \n",recv_data);
+	printf("RECEIVED DATA \n");
+	print_string_pagewise(recv_data,pages);
 
 	close(fd);
 	return 0;

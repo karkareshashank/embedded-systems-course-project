@@ -56,10 +56,8 @@ int read_EEPROM(char* buf,int count)
 		}
 		
 		init_j = j;
-		for(i = init_j;i < init_j+64;i++)
-		{
+		for(i = init_j;i < init_j+64;i++){
 			buf[j++] = tmp_buf[i - init_j];
-			printf("%c ",tmp_buf[i-init_j]);
 		}
 		
 		change_addr(1,0);

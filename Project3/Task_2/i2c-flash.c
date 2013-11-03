@@ -57,6 +57,7 @@ struct i2c_dev {
 
 #define MY_I2C_MAJOR	147
 #define I2C_MINORS	256
+#define MY_ADAP_NUM	2
 
 char addr[2] = {0x00,0x00};
 
@@ -195,7 +196,6 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 
         	for(i = tmp_count*64; i < (tmp_count*64)+ 64;i++){
         	        tmp[j] = data[i];
-			printk("%c",tmp[j]);
 			j++;
 		}
 
@@ -633,10 +633,17 @@ static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 	if (IS_ERR(i2c_dev))
 		return PTR_ERR(i2c_dev);
 
+	// My code part added
+	if(adap->nr != MY_ADAP_NUM){
+		return_i2c_dev(i2c_dev);
+		return 0;
+	}
+	// My code part finish
+
 	/* register this i2c device with the driver core */
 	i2c_dev->dev = device_create(i2c_dev_class, &adap->dev,
 				     MKDEV(MY_I2C_MAJOR, adap->nr), NULL,
-				     "i2c_flash-%d",adap->nr);
+				     "i2c_flash");
 	if (IS_ERR(i2c_dev->dev)) {
 		res = PTR_ERR(i2c_dev->dev);
 		goto error;

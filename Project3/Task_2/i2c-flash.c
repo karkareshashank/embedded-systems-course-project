@@ -57,10 +57,8 @@ struct i2c_dev {
 
 #define MY_I2C_MAJOR	147
 #define I2C_MINORS	256
-#define MY_PAGE_SIZE	64
-#define NUMBER_OF_PAGES	512
 
-static char addr[2] = {0x00,0x00};
+char addr[2] = {0x00,0x00};
 
 static LIST_HEAD(i2c_dev_list);
 static DEFINE_SPINLOCK(i2c_dev_list_lock);
@@ -144,7 +142,7 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
 {
 	char *tmp;
 	int ret;
-	int byte_count = count*MY_PAGE_SIZE;
+	int byte_count = count*64;
 
 	struct i2c_client *client = file->private_data;
 
@@ -153,7 +151,7 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
 	if (tmp == NULL)
 		return -ENOMEM;
 
-	pr_debug("i2c_flash-dev: i2c-%d reading %zu bytes.\n",
+	pr_debug("i2c_flash-dev: i2c_flash-%d reading %zu bytes.\n",
 		iminor(file->f_path.dentry->d_inode), count);
 
 	ret = i2c_master_recv(client, tmp,byte_count );
@@ -167,31 +165,38 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 		size_t count, loff_t *offset)
 {
 	int i;
-	int ret;
+	int j;
+	int ret = 0;
 	int tmp_count;
 	int tmp_addr;
 	int tmp1;
-	int data_byte_count =MY_PAGE_SIZE + 2;
+	int data_byte_count = 66;
 	char* tmp;
 	char* data;
 	
 	struct i2c_client *client = file->private_data;
 	tmp = (char*)kmalloc(sizeof(char)*data_byte_count, GFP_KERNEL);
+	data = (char*)kmalloc(sizeof(char)*count*64, GFP_KERNEL);
 	
 
-	data = memdup_user(buf, count*MY_PAGE_SIZE);
+	ret = copy_from_user((void*)data ,(void __user *)buf  ,count*64);
+	if( ret > 0)
+		return -1;
 
 
-	tmp_count = count;
+	tmp_count = 0;
 
-	while (tmp_count > 0) {
+	while (tmp_count != count) {
 
 	        // Constructing the data
         	tmp[0] = addr[0];
         	tmp[1] = addr[1];
+		j = 2;
 
-        	for(i = count-tmp_count; i <MY_PAGE_SIZE + 2;i++){
-        	        tmp[i] = data[i-2];
+        	for(i = tmp_count*64; i < (tmp_count*64)+ 64;i++){
+        	        tmp[j] = data[i];
+			printk("%c",tmp[j]);
+			j++;
 		}
 
 
@@ -199,7 +204,7 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 	        ret = i2c_master_send(client, tmp, 66);
         	msleep(5);
 
-		tmp_count--;
+		tmp_count++;
 		
 
 		if(addr[0] == 0x7f){
@@ -210,17 +215,18 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 			tmp1 = addr[1];
 			tmp_addr = addr[0];
 			tmp_addr = (tmp_addr << 8) | ( tmp1);
-			tmp_addr +=MY_PAGE_SIZE;
+			tmp_addr += 64;
 	
-			addr[1] = (tmp_addr & 0x00000003) << 6;
-			addr[0] = (tmp_addr & 0x000001fc) >> 2;		
+			addr[1] = (tmp_addr & 0xFF);
+			addr[0] = (tmp_addr & 0x7F00) >> 8;		
 		}
 	
 
 	}
 
-
-	return count*MY_PAGE_SIZE;
+	kfree(tmp);
+	kfree(data);
+	return ret;
 
 
 
@@ -724,7 +730,7 @@ static int __init i2c_dev_init(void)
 out_unreg_class:
 	class_destroy(i2c_dev_class);
 out_unreg_chrdev:
-	unregister_chrdev(I2C_MAJOR, "i2c_flash");
+	unregister_chrdev(MY_I2C_MAJOR, "i2c_flash");
 out:
 	printk(KERN_ERR "%s: Driver Initialisation failed\n", __FILE__);
 	return res;
@@ -735,7 +741,7 @@ static void __exit i2c_dev_exit(void)
 	bus_unregister_notifier(&i2c_bus_type, &i2cdev_notifier);
 	i2c_for_each_dev(NULL, i2cdev_detach_adapter);
 	class_destroy(i2c_dev_class);
-	unregister_chrdev(I2C_MAJOR, "i2c_flash");
+	unregister_chrdev(MY_I2C_MAJOR, "i2c_flash");
 }
 
 MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl> and "

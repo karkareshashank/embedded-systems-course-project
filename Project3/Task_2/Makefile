@@ -14,7 +14,7 @@ endif
 APP = test_app
 
 default:
-	$(CC) -$(ADDITIONAL_LIB) -o $(APP) $(APP).c
+	$(CC) -o $(APP) $(APP).c
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:

@@ -39,7 +39,8 @@
 #include <linux/i2c-dev.h>
 #include <linux/jiffies.h>
 #include <linux/uaccess.h>
-#include <workqueue.h>
+#include <linux/workqueue.h>
+#include <linux/delay.h>
 
 /*
  * An i2c_dev represents an i2c_adapter ... an I2C or SMBus master, not a
@@ -57,14 +58,14 @@ struct i2c_dev {
 
 #define MY_I2C_MAJOR	147
 #define I2C_MINORS	256
-#define PAGE_SIZE	64
+#define MY_PAGE_SIZE	64
 #define NUMBER_OF_PAGES	512
 
 static LIST_HEAD(i2c_dev_list);
 static DEFINE_SPINLOCK(i2c_dev_list_lock);
 
 static struct workqueue_struct *my_wq;
-static char addr[2] = {0x00,0x00};
+char addr[2] = {0x00,0x00};
 
 typedef struct{
 	struct work_struct my_work;
@@ -80,10 +81,10 @@ my_work_t *work;
 
 static void my_read_wq_fn(struct work_struct* work)
 {
+	int ret;
 	my_work_t *my_work = (my_work_t*)work;
 
-
-	ret = i2c_master_recv(my_work->client, my_work->buf, (my_work->count*PAGE_SIZE));
+	ret = i2c_master_recv(my_work->client, my_work->buf, (my_work->page_num * MY_PAGE_SIZE));
 	my_work->work_status = 2;
 	
 }
@@ -92,31 +93,38 @@ static void my_write_wq_fn(struct work_struct* work)
 {
 	int i;
 	int j;
+	int ret;
 	int count;
 	int tmp_count;
 	int tmp_addr;
 	int tmp1;
+	char* tmp;
+
 	my_work_t *my_work = (my_work_t*)work;
-	tmp = (char*)kmalloc(sizeof(char)*66);
+	tmp = (char*)kmalloc(sizeof(char)*66,GFP_KERNEL);
 
-	count = tmp_count = my_work->page_num;
+	count  = my_work->page_num;
+	tmp_count = 0;
 
-	while (tmp_count > 0) {
+	while (tmp_count != count) {
 
 	        // Constructing the data
         	tmp[0] = my_work->addr[0];
         	tmp[1] = my_work->addr[1];
+		j = 2;
 
-        	for(i = count-tmp_count; i < PAGE_SIZE + 2;i++){
-        	        tmp[i] = my_work->buf[i-2];
+        	for(i = tmp_count*64; i < (tmp_count*64)+ 64;i++){
+        	        tmp[j] = my_work->buf[i];
+			j++;
 		}
+		
 
 
         	// writing to the device
 	        ret = i2c_master_send(my_work->client, tmp, 66);
-        	usleep(5000);
+        	msleep(5);
 
-		tmp_count--;
+		tmp_count++;
 		
 
 		if(addr[0] == 0x7f){
@@ -127,10 +135,10 @@ static void my_write_wq_fn(struct work_struct* work)
 			tmp1 = my_work->addr[1];
 			tmp_addr = my_work->addr[0];
 			tmp_addr = (tmp_addr << 8) | ( tmp1);
-			tmp_addr += PAGE_SIZE;
+			tmp_addr += 64;
 	
-			my_work->addr[1] = (tmp_addr & 0x00000003) << 6;
-			my_work->addr[0] = (tmp_addr & 0x000001fc) >> 2;		
+			my_work->addr[1] = (tmp_addr & 0xFF);
+			my_work->addr[0] = (tmp_addr & 0x7F00) >> 8;		
 		}
 	
 
@@ -236,13 +244,13 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
 	}
 	else
 	{
-		work->buf = (char*)kmalloc(sizeof(char)*64*count);
+		work->buf = (char*)kmalloc(sizeof(char)*64*count,GFP_KERNEL);
 		work->page_num = count;
 		work->addr[0] = addr[0];
 		work->addr[1] = addr[1];
 		work->work_status = 1;
 		work->client = client;
-		INIT_WORK( (struct work_sturct*)work,my_read_wq_fn);
+		PREPARE_WORK( (struct work_struct*)work,my_read_wq_fn);
 		ret = queue_work(my_wq,(struct work_struct*)work);
 		return -2;
 
@@ -277,12 +285,12 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 		work->addr[0] = addr[0];
 		work->addr[0] = addr[1];
 		work->client = client;
-		INIT_WORK( (struct work_sturct*)work,my_write_wq_fn);
+		PREPARE_WORK( (struct work_struct*)work,my_write_wq_fn);
 		ret = queue_work(my_wq,(struct work_struct*)work);
 		return -2;
 
 	}
-	else if(work->work_status == 3)
+	else
 	{
 		kfree(work->buf);
 		work->work_status = 0;
@@ -292,8 +300,9 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 }
 
 
-off_t i2cdev_lseek(int fd, off_t offset, int whence)
+loff_t i2cdev_lseek(struct file* file, loff_t offset, int whence)
 {
+	int ret;
 	int tmp_addr;
 	struct i2c_client *client = file->private_data;
 	
@@ -783,16 +792,19 @@ static int __init i2c_dev_init(void)
 	/* Bind to already existing adapters right away */
 	i2c_for_each_dev(NULL, i2cdev_attach_adapter);
 
-	mw_wq = create_workqueue("i2c_flash_queue");
+	my_wq = create_singlethread_workqueue("i2c_flash_queue");
 	work = (my_work_t*)kmalloc(sizeof(my_work_t),GFP_KERNEL);
 	work->work_status = 0;
+	work->addr[0] = addr[0];
+	work->addr[1] = addr[1];
+	INIT_WORK((struct work_struct*)work,my_read_wq_fn);
 
 	return 0;
 
 out_unreg_class:
 	class_destroy(i2c_dev_class);
 out_unreg_chrdev:
-	unregister_chrdev(I2C_MAJOR, "i2c_flash");
+	unregister_chrdev(MY_I2C_MAJOR, "i2c_flash");
 out:
 	printk(KERN_ERR "%s: Driver Initialisation failed\n", __FILE__);
 	return res;
@@ -805,7 +817,7 @@ static void __exit i2c_dev_exit(void)
 	bus_unregister_notifier(&i2c_bus_type, &i2cdev_notifier);
 	i2c_for_each_dev(NULL, i2cdev_detach_adapter);
 	class_destroy(i2c_dev_class);
-	unregister_chrdev(I2C_MAJOR, "i2c_flash");
+	unregister_chrdev(MY_I2C_MAJOR, "i2c_flash");
 }
 
 MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl> and "

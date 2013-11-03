@@ -216,8 +216,8 @@ void change_addr(int offset,int flag)
 		tmp_addr = (tmp_addr << 8) | ( tmp1);
 		tmp_addr += 64;
 
-		addr[1] = (tmp_addr & 0x00000003) << 6;
-		addr[0] = (tmp_addr & 0x000001fc) >> 2;		
+		addr[1] = (tmp_addr & 0xff) ;
+		addr[0] = (tmp_addr & 0x7f00) >> 8;		
 	}
 
 }

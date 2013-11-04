@@ -83,7 +83,6 @@ my_work_t *work;
 static void my_read_wq_fn(struct work_struct* work)
 {
 	int ret;
-	int i;
 	my_work_t *my_work = (my_work_t*)work;
 
 	ret = i2c_master_recv(my_work->client, my_work->buf, (my_work->page_num * MY_PAGE_SIZE));
@@ -96,7 +95,6 @@ static void my_write_wq_fn(struct work_struct* work)
 {
 	int i;
 	int j;
-	int k;
 	int ret;
 	int count;
 	int tmp_count;

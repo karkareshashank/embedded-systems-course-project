@@ -8,8 +8,8 @@
 
 
 
-int  read_EEPROM(char* buf,int count);
-int  write_EEPROM(char* buf,int count);
+int  read_EEPROM(void* buf,int count);
+int  write_EEPROM(const void* buf,int count);
 int  seek_EEPROM(int offset);
 
 void change_addr(int offset,int flag);

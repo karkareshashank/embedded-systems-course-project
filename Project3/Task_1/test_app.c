@@ -94,7 +94,7 @@ int main(int argc,char** argv,char** uenv)
 
 
 	// Writing the data
-	res = write_EEPROM(data,pages);
+	res = write_EEPROM((const void*)data,pages);
 	if(res == -1){
 		printf("Error writing to EEPROM \n");
 		return -1;
@@ -111,7 +111,7 @@ int main(int argc,char** argv,char** uenv)
 
 	
 	// Reading the data
-	res = read_EEPROM(recv_data,pages);
+	res = read_EEPROM((void*)recv_data,pages);
 	if(res == -1){
 		printf("Error writing to EEPROM: \n");
                 return -1;

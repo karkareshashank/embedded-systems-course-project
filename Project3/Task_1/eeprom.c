@@ -21,7 +21,7 @@ char addr[2] = {0x00,0x00};
  *	It then send the request to the in-built device driver for reading
  *	from the eeprom.
  */
-int read_EEPROM(char* buf,int count)
+int read_EEPROM(void* buf,int count)
 {
         int res;
 	int fd;
@@ -29,6 +29,7 @@ int read_EEPROM(char* buf,int count)
 	int j = 0;
 	int init_j;
 	int page_count;
+	char* buffer = (char*)buf;
 	char* tmp_buf;
 
 	tmp_buf = (char*)malloc(sizeof(char)*64);
@@ -61,7 +62,7 @@ int read_EEPROM(char* buf,int count)
 		
 		init_j = j;
 		for(i = init_j;i < init_j+64;i++){
-			buf[j++] = tmp_buf[i - init_j];
+			buffer[j++] = tmp_buf[i - init_j];
 		}
 		
 		change_addr(1,0);
@@ -87,13 +88,14 @@ int read_EEPROM(char* buf,int count)
  * 	It then adds the address in front of the 64 bytes data and send write request
  *	to in-built driver.
  */
-int  write_EEPROM(char* buf, int count)
+int  write_EEPROM(const void* buf, int count)
 {
         int res;
         int i;
 	int fd;
 	int tmp_count;
 	int page_count;
+	char* buffer = (char*)buf;
         char data[PAGE_SIZE+2];
 
 	 // Opening the device file
@@ -121,7 +123,7 @@ int  write_EEPROM(char* buf, int count)
         	data[1] = addr[1];
 
         	for(i = count-tmp_count; i < PAGE_SIZE + 2;i++){
-        	        data[i] = buf[i-2];
+        	        data[i] = buffer[i-2];
 		}
 
 

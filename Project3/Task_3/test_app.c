@@ -9,7 +9,7 @@
 #include <linux/i2c-dev.h>
 #include <fcntl.h>
 
-#define FILENAME "/dev/i2c_flash-2"
+#define FILENAME "/dev/i2c_flash"
 #define DEVICE_ADDR 0x52
 
 
@@ -34,12 +34,12 @@ void random_string_gen(char* string,int pages)
 	char rand_char;
 	int i;
 
-	for(i = 0; i < 64*pages -1 ; i++)
+	for(i = 0; i < 64*pages ; i++)
 	{
 		rand_char = (char)random_number_gen(35,122);
 		string[i] = rand_char;
 	}	
-	string[i] = '\0';
+//	string[i] = '\0';
 }
 
 
@@ -81,15 +81,16 @@ int main(int argc,char** argv,char** uenv)
 	char* data;
 	char* recv_data;
 	char* page_data;
-	int pages = 20;
+	int send_pages = 10;
+	int recv_pages = 20;
 	int page_size = 64;
 
 
 	// Seeding for the rand function
 	srand(time(NULL));
 
-	data	  = (char*)malloc(sizeof(char)*page_size*pages);
-	recv_data = (char*)malloc(sizeof(char)*page_size*pages);
+	data	  = (char*)malloc(sizeof(char)*page_size*send_pages);
+	recv_data = (char*)malloc(sizeof(char)*page_size*recv_pages);
 	page_data = (char*)malloc(sizeof(char)*page_size+1);
 
 
@@ -107,18 +108,26 @@ int main(int argc,char** argv,char** uenv)
 	}
 
 	//Creating random string
-	random_string_gen(data,pages);
+	random_string_gen(data,send_pages);
 
 	printf("DATA SEND  \n");
-	print_string_pagewise(data,pages);
+	print_string_pagewise(data,send_pages);
 	printf("\n---------------------------------------------------\n");
 	// Writing the data
 	do{
-		res = write(fd ,data,pages);
+		res = write(fd ,data,send_pages);
 	}while(res != 0);
-	
-	
 
+	
+	random_string_gen(data,send_pages);
+	printf("Next Set of DATA SEND  \n");
+        print_string_pagewise(data,send_pages);
+        printf("\n---------------------------------------------------\n");
+
+	do{
+		res = write(fd,data,send_pages);
+	}while(res!= 0);	
+	
 	// Seeking
 	res = lseek(fd,0,SEEK_SET);
 	if(res == -1){
@@ -129,12 +138,12 @@ int main(int argc,char** argv,char** uenv)
 	
 	// Reading the data
 	do{
-		res = read(fd,recv_data,pages);
+		res = read(fd,recv_data,recv_pages);
 	}while(res!= 0);
 
 
 	printf("RECEIVED DATA \n");
-	print_string_pagewise(recv_data,pages);
+	print_string_pagewise(recv_data,recv_pages);
 
 	close(fd);
 	return 0;

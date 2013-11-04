@@ -12,11 +12,15 @@
 
 #include "eeprom.h"
 
+
 const char max_addr[2] = {0x7F,0xFF};
 char addr[2] = {0x00,0x00};
 
-
-
+/*
+ * 	This function accepts a buffer and page count as the argument.
+ *	It then send the request to the in-built device driver for reading
+ *	from the eeprom.
+ */
 int read_EEPROM(char* buf,int count)
 {
         int res;
@@ -77,7 +81,12 @@ int read_EEPROM(char* buf,int count)
 }
 
 
-
+/*
+ *	This function accepts the data and page count as the argument.
+ *      It then splits the input data into chunks of 64 bytes .
+ * 	It then adds the address in front of the 64 bytes data and send write request
+ *	to in-built driver.
+ */
 int  write_EEPROM(char* buf, int count)
 {
         int res;
@@ -134,8 +143,13 @@ int  write_EEPROM(char* buf, int count)
 }
 
 
-
-
+/*
+ * 	This function accepts page number as argument.
+ *	It then generate the proper address based on the 
+ *	page offset provided.Then we request write call 
+ *	on the built-in driver to just write address
+ *	to the device.
+ */
 int seek_EEPROM(int offset)
 {
 	

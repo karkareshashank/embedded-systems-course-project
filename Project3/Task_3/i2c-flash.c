@@ -83,9 +83,11 @@ my_work_t *work;
 static void my_read_wq_fn(struct work_struct* work)
 {
 	int ret;
+	int i;
 	my_work_t *my_work = (my_work_t*)work;
 
 	ret = i2c_master_recv(my_work->client, my_work->buf, (my_work->page_num * MY_PAGE_SIZE));
+	
 	my_work->work_status = 2;
 	
 }
@@ -94,6 +96,7 @@ static void my_write_wq_fn(struct work_struct* work)
 {
 	int i;
 	int j;
+	int k;
 	int ret;
 	int count;
 	int tmp_count;
@@ -121,7 +124,6 @@ static void my_write_wq_fn(struct work_struct* work)
 		
 
 
-        	// writing to the device
 	        ret = i2c_master_send(my_work->client, tmp, 66);
         	msleep(5);
 
@@ -129,8 +131,8 @@ static void my_write_wq_fn(struct work_struct* work)
 		
 
 		if(addr[0] == 0x7f){
-			addr[0] = 0x00;
-			addr[1] = 0x00;
+			my_work->addr[0] = 0x00;
+			my_work->addr[1] = 0x00;
 		}
 		else{
 			tmp1 = my_work->addr[1];
@@ -240,7 +242,6 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
 		ret = copy_to_user((void __user *)buf,(void*)work->buf,64*count);
 		kfree(work->buf);
 		work->work_status = 0;
-		// Set the  proper addr in the global addr variable
 		return 0;
 	}
 	else
@@ -284,7 +285,7 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
 		work->work_status = 1;
 		work->page_num = count;
 		work->addr[0] = addr[0];
-		work->addr[0] = addr[1];
+		work->addr[1] = addr[1];
 		work->client = client;
 		PREPARE_WORK( (struct work_struct*)work,my_write_wq_fn);
 		ret = queue_work(my_wq,(struct work_struct*)work);
@@ -711,7 +712,7 @@ static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 	/* register this i2c device with the driver core */
 	i2c_dev->dev = device_create(i2c_dev_class, &adap->dev,
 				     MKDEV(MY_I2C_MAJOR, adap->nr), NULL,
-				     "i2c_flash-%d",adap->nr);
+				     "i2c_flash");
 	if (IS_ERR(i2c_dev->dev)) {
 		res = PTR_ERR(i2c_dev->dev);
 		goto error;

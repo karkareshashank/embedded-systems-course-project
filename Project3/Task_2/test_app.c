@@ -81,15 +81,16 @@ int main(int argc,char** argv,char** uenv)
 	char* data;
 	char* recv_data;
 	char* page_data;
-	int pages = 20;
+	int send_pages = 10;
+	int recv_pages = 10;
 	int page_size = 64;
 
 
 	// Seeding for the rand function
 	srand(time(NULL));
 
-	data	  = (char*)malloc(sizeof(char)*page_size*pages);
-	recv_data = (char*)malloc(sizeof(char)*page_size*pages);
+	data	  = (char*)malloc(sizeof(char)*page_size*send_pages);
+	recv_data = (char*)malloc(sizeof(char)*page_size*recv_pages);
 	page_data = (char*)malloc(sizeof(char)*page_size+1);
 
 
@@ -107,19 +108,19 @@ int main(int argc,char** argv,char** uenv)
 	}
 
 	//Creating random string
-	random_string_gen(data,pages);
+	random_string_gen(data,send_pages);
 
 	printf("DATA SEND \n");
-	print_string_pagewise(data,pages);
+	print_string_pagewise(data,send_pages);
 	printf("\n---------------------------------------------------------\n");
 	// Writing the data
-	res = write(fd ,data,pages);
+	res = write(fd ,data,send_pages);
 	if(res == -1){
 		printf("Error writing to EEPROM \n");
 		return -1;
 	}
 	
-	
+
 
 	// Seeking
 	res = lseek(fd,0,SEEK_SET);
@@ -130,7 +131,7 @@ int main(int argc,char** argv,char** uenv)
 
 	
 	// Reading the data
-	res = read(fd,recv_data,pages);
+	res = read(fd,recv_data,recv_pages);
 	if(res == -1){
 		printf("Error writing to EEPROM: \n");
                 return -1;
@@ -138,7 +139,7 @@ int main(int argc,char** argv,char** uenv)
 
 
 	printf("RECEIVED DATA: \n");
-	print_string_pagewise(recv_data,pages);
+	print_string_pagewise(recv_data,recv_pages);
 
 	close(fd);
 	return 0;

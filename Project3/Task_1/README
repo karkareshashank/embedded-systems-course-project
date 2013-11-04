@@ -1,0 +1,36 @@
+   eeprom.c eeprom.h test_app.c
+===========================================
+
+This directory contains 3 files named eeprom.c eeprom.h test_app.c .
+eeprom.h 	--- 	contains the function declarations of read_EEPROM() , write_EEPROM() and seek_EEPROM() along with 
+	     		some #define of the constant values.
+
+eeprom.c 	---	contains the definitions of function declared in the eeprom.c file.
+
+test_app.c 	---	This user application is used to read , write data to/from the EEPROM device.
+			It will generate predefined number of pages of random 64 bytes data and write them.
+			It will the read same number of pages from the eeprom and display it pagewise.
+
+
+	Compilation
+================================
+To compile the application just use :
+
+bash:~ make 
+
+It produces the file named test_app.
+
+To clean the application just type:
+
+bash:~ make clean
+
+
+
+	Usage
+=================================
+To use the application just type:
+
+bash:~ ./test_app
+
+	
+

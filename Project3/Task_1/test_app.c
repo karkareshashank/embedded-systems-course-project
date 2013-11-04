@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-//#include "eeprom.h"
+#include "eeprom.h"
 
 
 

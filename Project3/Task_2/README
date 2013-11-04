@@ -1,0 +1,69 @@
+	i2c-flash.c , test_app.c
+============================================
+
+This directory contians 2 files i2c-flash.c and test_app.c.
+
+i2c-flash.c 	---	This the device  driver for our EEPROM which works on pages.
+			It implements open,read,write,ioctl,close function for the device file "/dev/i2c_flash".
+			read and write operations are blocking operation.
+
+test_appc.c	---	This the user space application which test our driver by sending
+			predefined number of pages data to the device and the reading same number of pages 
+			from the device.
+
+
+
+	Compilation
+================================
+
+To compile the driver and user-space application use:
+
+bash:~ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi-
+
+It will generate lots of files in this folder .
+
+To delete these files  use:
+
+bash:~ make clean
+
+
+	Usage
+=================================
+
+To insert the module use:
+-----------------------------
+
+if you are root user:
+bash:~ insmod i2c_flash.ko
+
+if you are not root user:
+bash:~ sudo insmod i2c_flash.ko
+[ It will prompt you to enter your password.]
+
+
+
+
+
+To remove the module use:
+------------------------------
+
+if you are root user:
+bash:~ rmmod i2c_flash.ko
+
+if you are not root user:
+bash:~ sudo rmmod i2c_flash.ko
+[ It will prompt you to enter your password.]
+
+
+To test your driver use:
+---------------------------------
+
+if you are root user:
+bash:~ ./test_app
+
+if you are not root user:
+bash:~ sudo ./test_app
+[ It will prompt you to enter your password.]
+
+
+

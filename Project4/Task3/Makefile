@@ -2,6 +2,8 @@ obj-m:= my_mousedev.o
 
 PWD:= $(shell pwd)
 
+APP=task3
+
 # Based on the ARCH specified it will choose either arm compiler or gcc for intel arch
 ifeq ($(ARCH),arm)
 	CC = arm-angstrom-linux-gnueabi-gcc
@@ -13,6 +15,7 @@ endif
 
 
 default:
+	$(CC) -o $(APP) $(APP).c
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
 
 clean:
@@ -26,3 +29,4 @@ clean:
 	rm -f *.mod.o
 	rm -f \.*.cmd
 	rm -f Module.markers
+	rm -f $(APP)

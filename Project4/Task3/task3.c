@@ -7,14 +7,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <error.h>
+#include <errno.h>
+#include <string.h>
+#include <setjmp.h>
 
+
+jmp_buf buffer;
 float pi = 3.0;
 int flag = 1;
-jmp_buf buffer;
 
 
 void new_calculate_pi()
@@ -23,7 +29,7 @@ void new_calculate_pi()
 	float	tmp	= 	1.0;
 	pi = 0.0;
 
-	for(i = 1; 1 ;i++)
+	for(i = 1; 1;i++)
 	{
 		if(i%2 == 0)
 			pi = pi - (4.0 / tmp);
@@ -31,8 +37,6 @@ void new_calculate_pi()
 			pi = pi + (4.0 /tmp);
 	
 		tmp = tmp + 2.0;
-
-//		printf("");
 		if(setjmp(buffer))
 			return;
 	}
@@ -44,22 +48,8 @@ void new_calculate_pi()
 
 void my_handler(int sig)
 {
-	printf("Stopping the pi calculation \n");
+	printf("Handled \n");
 	longjmp(buffer,1);
-}
-
-void reg_signal()
-{
-	struct sigaction* new;
-
-        new = (struct sigaction*)malloc(sizeof(struct sigaction));
-
-        new->sa_handler = my_handler;
-        sigaction(SIGALRM,new,NULL);
-
-	if(new)
-		free(new);
-
 }
 
 
@@ -67,17 +57,36 @@ int main(int argc,char** argv)
 {
 	unsigned long int sig;
 	int sum;
+	int fd1;
+	int fd2;
+	int ret;
+	int oflags,retval;
+	fd_set  set;
+	pid_t my_pid;
 	pthread_t tid;
 
-	reg_signal();
+	struct sigaction* new;
+	new = (struct sigaction*)malloc(sizeof(struct sigaction));
 
-	alarm(1);
+	new->sa_handler = my_handler;
+	sigaction(SIGTERM,new,NULL);
+
+	fd2 = open("/dev/input/my_mouse0",O_RDWR);
+
+	my_pid = getpid();
+	ret = ioctl(fd2,1,my_pid);
 
 	new_calculate_pi();
 
-	
+
 	printf("pi = %1.15f\n",pi);
 
+	ret = ioctl(fd2,2,my_pid);
+
+	if(new)
+		free(new);
+
+	close(fd2);
 
 	return 0;
 }

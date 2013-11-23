@@ -1,0 +1,42 @@
+
+	task4_single_signal.c
+======================================
+
+This folder contains task4_single_signal.c file.
+
+This file shows the behavior that when a signal (SIGALRM in this case) is passed to
+a process,  having multiple threads (5 in this case), only 1 threads receives the signal
+and handles it if handler registerd.
+
+
+
+
+	Compilation
+=================================
+
+If compiling for ARM processor:
+$bash:~ arm-angstrom-linux-gnueabi-gcc -pthread task4_single_signal.c
+
+If compiling for x86 processor:
+$bash:~ gcc -pthread task4_single_signal.c
+
+
+	Usage
+==================================
+
+To execute the executable:
+$bash:~ ./a.out
+
+
+
+	Output
+=================================
+
+All the thread ids (5 in our case) will be displayed .
+And after a second the thread id of the thread who recived the signal 
+will be displayed.
+
+----------------------------------------------------------------------------------------
+Thread id's are  3076361024     3067968320    3059575616    3051182912    3042790208 
+Signal Handled by thread 3076361024 
+----------------------------------------------------------------------------------------

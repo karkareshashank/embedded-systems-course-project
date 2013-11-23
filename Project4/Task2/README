@@ -1,0 +1,29 @@
+	task2.c
+==================================
+
+This directory contains single file named task2.c 
+
+task2.c	  ---  This file shows the imprecise computation model , where
+		we calculate value of pi using a sum of series.
+ 		We print the result after 1 sec of the computation.
+		We use alarm() function with argument as 1 , so it 
+		produces SIGALRM signal after 1 sec. And we handle the 
+		signal and use longjmp function to go to the place where
+		setjmp was called (inside the computation of pi).
+		Deciding if we have reached setjmp from longjmp based on the 
+		return value of the setjmp , we return from the function and 
+		print the value.
+		
+
+	Compilation
+===================================
+
+To compile the program:
+$bash:~ gcc task2.c
+
+
+	Usage
+==================================
+
+To execute the binary:
+$bash:~ ./a.out

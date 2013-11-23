@@ -1,0 +1,58 @@
+
+	my_mousedev.c , task3.c
+================================================
+
+This directory contains 2 files:
+
+my_mousedev.c	---	Most of the file is same as the mousedev.c file present driver/input/ 
+			directory in the kernel source. 
+			Addition to this file is the detection of double right click along with 
+			sending the SIGTERM signal to the processes registered.
+			Right click event happens if 2 clicks are seperated by atmost 20 jiffies.
+			Process can register to get the SIGTERM signal when right double click happens,
+			by sending their pid via ioclt command.
+			ioctl function is also implemented with 2 cmds, 1 to register the pid
+			and 2 to deregister the pid.
+
+			To modify the existing driver , we had to change the minor number of the devices ,
+			also modified the device filename from mouseX to my_mouseX.
+			Added unlocked_ioctl to its fops file_operations structure , to add the functionality
+			of registering and deregistering the pid.
+			Each single click on mouse generate two events in mousedev_key_event function.
+			We seperate the events based on the swithc case in that function.
+			Implemented the logic to detect double click in the BTN_RIGHT case of the switch/case.
+
+			Instead of sending SIGTERM signal via the kill_fasyc function which do not have capabilities 
+			to send anything instead of SIGIO, used send_sig function which sends a signal to the 
+			specific process given in the argument.
+
+			
+
+task3.c		---	This file contains imprecise computation implementation where , we calculate
+			value of pi using the sum of infinite series. When we receive SIGTERM signal when
+			double right click happens. We stop the computation and print the result , value of pi.
+
+
+
+	Compilation
+===================================================
+
+To compile the module and test application:
+$bash:~ make ARCH=arm CROSS_COMPILE=arm-angstrom-linux-gnueabi- KDIR=<path-to-your-kernel-source>
+
+
+
+	Usage
+==================================================
+
+To insert the module:
+$bash:~ insmod my_mousedev.ko
+
+To run the test application:
+[This app is customized for beagleboard mouse and uses /dev/my_mouse0 but might not work on other system]
+
+$bash:~ ./task3
+The task3 application will wait for you till , you double click the 
+mouse.
+
+			

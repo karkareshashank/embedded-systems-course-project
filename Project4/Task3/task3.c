@@ -66,10 +66,15 @@ int main(int argc,char** argv)
 	pthread_t tid;
 
 	struct sigaction* new;
+	struct sigaction* tmp;
+	tmp = (struct sigaction*)malloc(sizeof(struct sigaction));
 	new = (struct sigaction*)malloc(sizeof(struct sigaction));
+
+	tmp->sa_handler = SIG_IGN;
 
 	new->sa_handler = my_handler;
 	sigaction(SIGTERM,new,NULL);
+	sigaction(SIGIO,tmp,NULL);
 
 	fd2 = open("/dev/input/my_mouse0",O_RDWR);
 

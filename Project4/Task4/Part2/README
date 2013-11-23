@@ -1,0 +1,81 @@
+
+task4_multiple_signal.c , my_signal_api.h , my_signal_api.c
+==============================================================
+
+This directory contains 3 files:
+
+task4_multiple_signal.c	  --- 	This file contains the code that demonstrate that the threads who registerd with
+				the API recieved the SIGIO signal , while the others did not get it.
+
+my_signal_api.h		  ---   This file contains the function declaration of the function in our API.
+
+my_signal_api.c		  ---   This file contains the function definition of our API.
+
+
+	Approach
+===========================
+
+A thread registers with my api using ,  register_thread_for_signal(pthread_t) function where I store
+the pthread_t id sent as argument to the function in a list.
+
+A thread can deregister from my api , using deregister_thread_for_signal(pthread_t) function where I
+remove that thread id entry from the list.
+
+Internally  using SIGUSR1 signal to synchronize between various registerd threads.
+The init_api() function is called early in the main and thus blocks the sigio and sigusr1.
+So all the threads spawned after it will inherit this property.
+From init_api() a thread (using function my_api_handler() ) is spawned who will wait for SIGIO to arrive.
+
+The function wait_for_sigio() is used in each thread who want to wait for SIGIO and have registerd 
+with my api. In this function I first wait for SIGUSR1 signal, so that the thread spawned by init_api 
+will receive the SIGIO and no other. This thread will generate SIGUSR1 signal which will unblock the 
+threads who were waiting on SIGUSR1. Then they would block on SIGIO signal as shown in wait_for_sigio() function.
+
+Then the thread created from init_api() will generate SIGIO signals using pthread_kill() to all the threads
+in the list and thus all the threads registered will receive SIGIO and continue forward.
+
+[NOTE: An assumption is made that, since init_api() function is called early in the main() and thus 
+ creates the first thread of the process. Since the first thread gets the signal in process with multiple thread (implemented in this way).
+ my_api_handler() function receives the SIGIO function]
+
+
+
+
+
+	compilation
+=================================
+
+For ARM processor:
+$bash:~ make ARCH=arm
+
+For x86 processor:
+$bash:~ make
+
+
+	Usage
+================================
+
+To run the program:
+$bash:~ ./task4_app
+
+
+
+	Output
+===============================
+Output should be like one shown below:
+Thread ids of the all the threads is shown and thread ids of registered thread is shown.
+Threads registerd is the one getting SIGIO signal.
+
+----------------------------------------------------------------------------------------------
+waiting for SIGIO ... tid = 3059641152 
+waiting for SIGIO ... tid = 3051248448 
+waiting for SIGIO ... tid = 3042855744 
+waiting for SIGIO without registering ... tid =  3034463040 
+ Threads created	= 3059641152 3051248448 3042855744 3034463040 3026070336 
+ threads registerd	= 3059641152 3051248448 3042855744 
+waiting for SIGIO without registering ... tid =  3026070336 
+SIGIO recieved by thread 3059641152 
+SIGIO recieved by thread 3051248448 
+SIGIO recieved by thread 3042855744 
+---------------------------------------------------------------------------------------------- 
+			

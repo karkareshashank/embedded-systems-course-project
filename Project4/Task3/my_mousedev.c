@@ -35,7 +35,7 @@
 */
 
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
-MODULE_DESCRIPTION("Mouse (ExplorerPS/2) device interfaces");
+MODULE_DESCRIPTION("Mouse (ExplorerPS/2) device interfaces + Double Righ click generate SIGTERM");
 MODULE_LICENSE("GPL");
 
 #ifndef CONFIG_INPUT_MOUSEDEV_SCREEN_X
@@ -334,8 +334,7 @@ static void mousedev_key_event(struct mousedev *mousedev,
 static void mousedev_notify_readers(struct mousedev *mousedev,
 				    struct mousedev_hw_data *packet)
 {
- /*
-//    if(dbl_click == 1){
+ 
 	struct mousedev_client *client;
 	struct mousedev_motion *p;
 	unsigned int new_head;
@@ -394,8 +393,6 @@ static void mousedev_notify_readers(struct mousedev *mousedev,
 	if (wake_readers)
 		wake_up_interruptible(&mousedev->wait);
 
-//	dbl_click = 0;
-    */
 }
 
 static void mousedev_touchpad_touch(struct mousedev *mousedev, int value)
@@ -779,8 +776,6 @@ static void mousedev_generate_response(struct mousedev_client *client,
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
 static ssize_t mousedev_write(struct file *file, const char __user *buffer,
 				size_t count, loff_t *ppos)
 {
@@ -863,8 +858,6 @@ static ssize_t mousedev_read(struct file *file, char __user *buffer,
 
 	return count;
 }
-*/
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /* No kernel lock - fine */
@@ -928,8 +921,8 @@ static long mousedev_ioctl(struct file* file, unsigned int cmd, unsigned long ar
 
 static const struct file_operations mousedev_fops = {
 	.owner =		THIS_MODULE,
-//	.read =			mousedev_read,
-//	.write = 		mousedev_write,
+	.read =			mousedev_read,
+	.write = 		mousedev_write,
 	.poll =			mousedev_poll,
 	.open =			mousedev_open,
 	.unlocked_ioctl = 	mousedev_ioctl,

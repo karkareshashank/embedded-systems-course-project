@@ -2,7 +2,7 @@
  * task2.c
  *
  *  Created on: Nov 19, 2013
- *      Author: shashank
+ *      Author: shashank karkare
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,12 +17,18 @@ int flag = 1;
 jmp_buf buffer;
 
 
+/*
+ *   Calculates the calue of the pi
+ *   using the sum of the infinite series.
+ *   Computation stops when u recive SIGALRM signal.
+ */
 void new_calculate_pi()
 {
 	int 	i 	= 	0;
 	float	tmp	= 	1.0;
 	pi = 0.0;
 
+	if(setjmp(buffer) == 0){
 	for(i = 1; 1 ;i++)
 	{
 		if(i%2 == 0)
@@ -32,9 +38,7 @@ void new_calculate_pi()
 	
 		tmp = tmp + 2.0;
 
-//		printf("");
-		if(setjmp(buffer))
-			return;
+	}
 	}
 
 

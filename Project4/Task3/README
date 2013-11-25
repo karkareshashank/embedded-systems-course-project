@@ -31,6 +31,9 @@ my_mousedev.c	---	Most of the file is same as the mousedev.c file present driver
 task3.c		---	This file contains imprecise computation implementation where , we calculate
 			value of pi using the sum of infinite series. When we receive SIGTERM signal when
 			double right click happens. We stop the computation and print the result , value of pi.
+			[ Note: After you run ./task3 , move the mouse little bit so the application can determine
+			        which mouse to select to read right double click and then use same mouse to 
+				generate right double click .]
 
 
 
@@ -52,7 +55,6 @@ To run the test application:
 [This app is customized for beagleboard mouse and uses /dev/my_mouse0 but might not work on other system]
 
 $bash:~ ./task3
-The task3 application will wait for you till , you double click the 
-mouse.
+The task3 application will wait for you till , you double right click the mouse.
 
 			

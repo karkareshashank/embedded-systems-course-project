@@ -25,6 +25,9 @@ Internally  using SIGUSR1 signal to synchronize between various registerd thread
 The init_api() function is called early in the main and thus blocks the sigio and sigusr1.
 So all the threads spawned after it will inherit this property.
 From init_api() a thread (using function my_api_handler() ) is spawned who will wait for SIGIO to arrive.
+my_api_handler() unblocks the SIGIO using pthread_sigmask() and registers handler_func() for SIGIO  so only this thread has now SIGIO 
+unblocked and thus any SIGIO will be recived by this thread.
+
 
 The function wait_for_sigio() is used in each thread who want to wait for SIGIO and have registerd 
 with my api. In this function I first wait for SIGUSR1 signal, so that the thread spawned by init_api 
@@ -33,11 +36,6 @@ threads who were waiting on SIGUSR1. Then they would block on SIGIO signal as sh
 
 Then the thread created from init_api() will generate SIGIO signals using pthread_kill() to all the threads
 in the list and thus all the threads registered will receive SIGIO and continue forward.
-
-[NOTE: An assumption is made that, since init_api() function is called early in the main() and thus 
- creates the first thread of the process. Since the first thread gets the signal in process with multiple thread (implemented in this way).
- my_api_handler() function receives the SIGIO function]
-
 
 
 
@@ -63,19 +61,17 @@ $bash:~ ./task4_app
 	Output
 ===============================
 Output should be like one shown below:
-Thread ids of the all the threads is shown and thread ids of registered thread is shown.
 Threads registerd is the one getting SIGIO signal.
 
-----------------------------------------------------------------------------------------------
-waiting for SIGIO ... tid = 3059641152 
-waiting for SIGIO ... tid = 3051248448 
-waiting for SIGIO ... tid = 3042855744 
-waiting for SIGIO without registering ... tid =  3034463040 
- Threads created	= 3059641152 3051248448 3042855744 3034463040 3026070336 
- threads registerd	= 3059641152 3051248448 3042855744 
-waiting for SIGIO without registering ... tid =  3026070336 
-SIGIO recieved by thread 3059641152 
-SIGIO recieved by thread 3051248448 
-SIGIO recieved by thread 3042855744 
----------------------------------------------------------------------------------------------- 
-			
+----------------------------------------------------------------------------------------
+waiting for SIGIO ... tid = 3050531648 
+waiting for SIGIO ... tid = 3058924352 
+waiting for SIGIO ... tid = 3042138944 
+Do not want to receive SIGIO  ... tid =  3033746240 
+Do not want to receive SIGIO  ... tid =  3025353536 
+
+ SIGIO generated 
+SIGIO recieved by thread 3058924352 
+SIGIO recieved by thread 3050531648 
+SIGIO recieved by thread 3042138944 
+-----------------------------------------------------------------------------------------	

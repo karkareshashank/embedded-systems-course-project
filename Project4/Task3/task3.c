@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <string.h>
 #include <setjmp.h>
+#include <sys/select.h>
 
 
 jmp_buf buffer;
@@ -58,40 +59,79 @@ int main(int argc,char** argv)
 	unsigned long int sig;
 	int sum;
 	int fd1;
-	int fd2;
+	int i;
+	int j;
+	int fd;
+
+	int all_fd[10];
+	int top = 0;
 	int ret;
-	int oflags,retval;
+
+	char*  filename;
+
 	fd_set  set;
+
 	pid_t my_pid;
-	pthread_t tid;
 
 	struct sigaction* new;
 	struct sigaction* tmp;
+	
+	filename = (char*)malloc(sizeof(char)*25);
+	
 	tmp = (struct sigaction*)malloc(sizeof(struct sigaction));
 	new = (struct sigaction*)malloc(sizeof(struct sigaction));
 
-	tmp->sa_handler = SIG_IGN;
 
+	tmp->sa_handler = SIG_IGN;
 	new->sa_handler = my_handler;
 	sigaction(SIGTERM,new,NULL);
 	sigaction(SIGIO,tmp,NULL);
 
-	fd2 = open("/dev/input/my_mouse0",O_RDWR);
+	sprintf(filename,"/dev/input/my_mouse");
+
+	for(i = 0 ;i < 100;i++)
+	{
+		sprintf(filename,"/dev/input/my_mouse%d",i);
+		fd = open(filename,O_RDWR);
+		if(fd != -1)
+			all_fd[top++] = fd;
+	}
+
+	FD_ZERO(&set);
+
+	for(i = 0;i < top; i++)
+		FD_SET(all_fd[i],&set);
+		
+	select(all_fd[top-1] + 1,&set,NULL,NULL,NULL);
+	
+	for(i = 0; i < top;i++)
+	{
+		if(FD_ISSET(all_fd[i],&set) != 0)
+		{
+			fd = all_fd[i];
+			for(j = 0;j < top;j++)
+				if(j != i)
+					close(all_fd[j]);
+			break;
+		}
+
+	}
+
 
 	my_pid = getpid();
-	ret = ioctl(fd2,1,my_pid);
+	ret = ioctl(fd,1,my_pid);
 
 	new_calculate_pi();
 
 
 	printf("pi = %1.15f\n",pi);
 
-	ret = ioctl(fd2,2,my_pid);
+	ret = ioctl(fd,2,my_pid);
 
 	if(new)
 		free(new);
 
-	close(fd2);
+	close(fd);
 
 	return 0;
 }

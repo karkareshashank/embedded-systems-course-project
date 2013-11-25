@@ -28,6 +28,7 @@
 #include <linux/jiffies.h>
 #include <linux/list.h>
 #include <linux/semaphore.h>
+#include <linux/pid.h>
 /*
 #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
 #include <linux/miscdevice.h>
@@ -262,7 +263,13 @@ static void mousedev_key_event(struct mousedev *mousedev,
 
 	case BTN_TOUCH:
 	case BTN_0:
-	case BTN_LEFT:		index = 0; 
+	case BTN_LEFT:		index = 0;
+				prev_click = 0; 
+				break;
+
+	case BTN_STYLUS:
+	case BTN_1:
+	case BTN_RIGHT:		index = 1;
 				//////////////////////////////////////////////////
                                 if(prev_click == 0){
                                         dbl_click = 0;
@@ -278,20 +285,20 @@ static void mousedev_key_event(struct mousedev *mousedev,
                                         if(curr_jiff - prev_jiff  > 0  && curr_jiff - prev_jiff < click_diff){
                                                 prev_jiff = curr_jiff;
                                         }
-					else
-						prev_click = 1;
+                                        else
+                                                prev_click = 1;
                                 }
                                 else {
                                         dbl_click = 1;
                                         prev_click = 0;
                                         printk("Double Click detected  HZ \n");
-					down(&my_pid_list_sem);				
-					list_for_each_entry(pos,&my_pid_list_head,list)
-					{
-						p = pid_task(find_vpid(pos->pid) , PIDTYPE_PID);
-						send_sig(SIGTERM,p,0);
-					}
-					up(&my_pid_list_sem);
+                                        down(&my_pid_list_sem);
+                                        list_for_each_entry(pos,&my_pid_list_head,list)
+                                        {
+                                                p = pid_task(find_vpid(pos->pid) , PIDTYPE_PID);
+                                                send_sig(SIGTERM,p,0);
+                                        }
+                                        up(&my_pid_list_sem);
 
                                 }
 
@@ -300,11 +307,7 @@ static void mousedev_key_event(struct mousedev *mousedev,
 
 
 
-				break;
-
-	case BTN_STYLUS:
-	case BTN_1:
-	case BTN_RIGHT:		index = 1; 
+ 
 				break;
 
 	case BTN_2:
@@ -343,7 +346,7 @@ static void mousedev_notify_readers(struct mousedev *mousedev,
 	rcu_read_lock();
 	list_for_each_entry_rcu(client, &mousedev->client_list, node) {
 
-		* Just acquire the lock, interrupts already disabled 
+		/* Just acquire the lock, interrupts already disabled */
 		spin_lock(&client->packet_lock);
 
 		p = &client->packets[client->head];
@@ -594,21 +597,19 @@ static int mousedev_release(struct inode *inode, struct file *file)
 	struct mousedev_client *client = file->private_data;
 	struct mousedev *mousedev = client->mousedev;
 
-/////////////////////////////////////////////////////////////////////
-	/* To remove the pid entry if the user does not remove it by calling ioctl explicitly */
+	//////////////////////////////////////////////////////////////////////////////
 	my_node_t* pos;
 	my_node_t* tmp;
-
-	list_for_each_entry_safe(pos,tmp,&my_pid_list_head,list)
-	{
+	
+	list_for_each_entry_safe(pos,tmp,&my_pid_list_head,list){
 		list_del(&pos->list);
 		if(pos)
 			kfree(pos);
-
 	}
 
-/////////////////////////////////////////////////////////////////////
+	
 
+	////////////////////////////////////////////////////////////////////////////
 	mousedev_detach_client(mousedev, client);
 	kfree(client);
 
@@ -893,18 +894,18 @@ static long mousedev_ioctl(struct file* file, unsigned int cmd, unsigned long ar
 			INIT_LIST_HEAD(&new->list);
 			new->pid = arg;
 
-//			down(&my_pid_list_sem);
+			down(&my_pid_list_sem);
 			list_add(&new->list,&my_pid_list_head);
-//			up(&my_pid_list_sem);
+			up(&my_pid_list_sem);
 			break;
 		case 2:						// Deregistering from the list
 			list_for_each_entry_safe(new,tmp,&my_pid_list_head,list)
 			{
 				if(new->pid == arg)
 				{
-//					down(&my_pid_list_sem);
+					down(&my_pid_list_sem);
 					list_del(&new->list);
-//					up(&my_pid_list_sem);
+					up(&my_pid_list_sem);
 				}
 			}
 
@@ -1242,12 +1243,28 @@ static int __init mousedev_init(void)
 
 static void __exit mousedev_exit(void)
 {
+	my_node_t* pos;
+	my_node_t* tmp;
+	
 /*
 #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
 	if (psaux_registered)
 		misc_deregister(&psaux_mouse);
 #endif
 */
+///////////////////////////////////////////////////////////////////////////
+	if(list_empty(&my_pid_list_head) != 0){
+
+	        list_for_each_entry_safe(pos,tmp,&my_pid_list_head,list)
+        	{
+                       	list_del(&pos->list);
+	                if(pos)
+                                kfree(pos);
+               	}
+
+	
+	}
+///////////////////////////////////////////////////////////////////////////
 	input_unregister_handler(&mousedev_handler);
 	mousedev_destroy(mousedev_mix);
 }

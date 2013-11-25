@@ -5,8 +5,8 @@
 
 #include "my_signal_api.h"
 
-static node_t* head;
-static int     pending_count = 0;
+static node_t* 	head;
+static int     	pending_count = 0;
 static int	count = 0;
 
 
@@ -27,45 +27,62 @@ void wait_for_sigio() {
 		sigemptyset(my_api_sigset);
 		sigaddset(my_api_sigset,SIGIO);
 		sigwait(my_api_sigset,&sig);
+		
 
 		free(my_api_sigset);
+		
 }
 
+void handling_func(int sig)
+{
+	
+	node_t* tmp;
+	tmp = head;
+	pending_count  = count;
+	
+	if(sig == SIGIO){
+		if(tmp == NULL){
+		}
+		else{
+			do{
+				pthread_kill(tmp->thread_id,SIGUSR1);
+                                tmp = tmp->next;
+                        }while(tmp != head);
+
+			while(pending_count);
+			tmp = head;
+
+			
+
+			do{
+				pthread_kill(tmp->thread_id,SIGIO);
+				tmp = tmp->next;
+			}while(tmp != head);
+
+	
+		}			
+		
+	}
+}
 
 void my_api_handler()
 {
 	node_t* tmp;
 	sigset_t signal_set,old_set,new_set;
+	struct sigaction new;
 	int sig;
 
-	for(;;){
-		sigemptyset(&signal_set);
-		sigaddset(&signal_set,SIGIO);
-		sigwait(&signal_set,&sig);
-		tmp = head;
-		pending_count  = count;
+	sigemptyset(&new_set);
+	sigaddset(&new_set,SIGIO);
+	
 
-		if(sig == SIGIO){
-			if(tmp == NULL){
-				continue;
-			}
-			else{
-				do{
-                                        pthread_kill(tmp->thread_id,SIGUSR1);
-                                        tmp = tmp->next;
-                                }while(tmp != head);
+	pthread_sigmask(SIG_UNBLOCK,&new_set,NULL);
 
-				while(pending_count);
-				tmp = head;
+	new.sa_handler = handling_func;
+	sigaction(SIGIO,&new,NULL);
 
-				do{
-					pthread_kill(tmp->thread_id,SIGIO);
-					tmp = tmp->next;
-				}while(tmp != head);
-			}			
-			
-		}
-	   
+	while(1){
+		sleep(1);
 	}
 	
 }

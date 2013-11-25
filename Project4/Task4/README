@@ -1,0 +1,7 @@
+
+This directory contains 2 directory named "Part2" and "Part3".
+
+"Part2" directory contains the solution to the first part of Task4 where a random thread gets the SIGIO.
+
+"Part3" directory contains the solution to the second part of the Task4 where all registered user should recive the SIGIO.
+
